@@ -1,6 +1,16 @@
+# .htaccess — RENDER.COM-PROOF VERSION (2025)
 RewriteEngine On
+RewriteBase /
 
-# Redirect all non-file, non-directory requests to index.php
+# If the request is for a real file or directory, serve it directly
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule . index.php [QSA,L]
+
+# Force everything else to index.php with the clean URL as "url" parameter
+RewriteRule ^(.*)$ index.php?url=$1 [QSA,L]
+
+# Security headers
+Header always set Access-Control-Allow-Origin "*"
+Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+Header always set Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With, X-User"
+Header always set Access-Control-Allow-Credentials "true"
