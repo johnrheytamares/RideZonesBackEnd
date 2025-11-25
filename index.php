@@ -66,6 +66,27 @@ if ($_SERVER['REQUEST_URI'] === '/health') {
     exit;
 }
 
+// 1. Check if index.php is actually being reached
+if (!file_exists(__FILE__)) {
+    http_response_code(500);
+    exit("DIAG: index.php is NOT being reached.");
+}
+
+// 2. Check if .htaccess rewrite is working
+// If query string "diag" exists, routing works
+if (isset($_GET['diag'])) {
+    echo "DIAG: index.php is reachable. Rewrite is WORKING.";
+    exit;
+}
+
+// 3. Check if URL router is receiving the path
+$url = $_GET['url'] ?? null;
+
+if ($url === null) {
+    echo "DIAG: index.php is reachable BUT rewrite is NOT WORKING. Apache is not rewriting.";
+    exit;
+}
+
 // ------------------------------------------------------
 // SYSTEM PATHS
 // ------------------------------------------------------
