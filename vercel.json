@@ -8,12 +8,17 @@
     {
       "src": "public/**/*.php",
       "use": "@vercel/php"
+    },
+    {
+      "src": "frontend/package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "dist" }
     }
   ],
-  "routes": [
+  "rewrites": [
     {
-      "src": "/(.*)",
-      "dest": "/public/index.php"
+      "source": "/(.*)",
+      "destination": "/public/index.php"
     }
   ]
 }
