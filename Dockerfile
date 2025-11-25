@@ -1,43 +1,41 @@
-# Base PHP + Apache
 FROM php:8.3-apache
 
-# Install needed extensions + tools
+# Install extensions
 RUN apt-get update && apt-get install -y \
     libpng-dev libjpeg-dev libfreetype6-dev zip unzip git \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) gd pdo pdo_mysql mysqli \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Enable Apache rewrite (para gumana ang pretty URLs mo)
+# Enable rewrite
 RUN a2enmod rewrite
 
-# Composer (kung may composer.json ka)
+# Install Composer first
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Copy lahat ng files
+# Copy code
 COPY . /var/www/html/
 
-# Set permissions (safe kahit wala yung folders)
-RUN chown -R www-data:www-data /var/www/html \
+# NUCLEAR DOCUMENT ROOT FIX — WALANG LABAN NA
+RUN echo '\
+<VirtualHost *:80>\n\
+    DocumentRoot /var/www/html/public\n\
+    <Directory /var/www/html/public>\n\
+        AllowOverride All\n\
+        Require all granted\n\
+        RewriteEngine On\n\
+    </Directory>\n\
+</VirtualHost>' > /etc/apache2/sites-available/000-default.conf
+
+# Permissions
+RUN mkdir -p /var/www/html/storage /var/www/html/public/uploads \
+    && chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html \
-    && mkdir -p /var/www/html/storage \
-    && mkdir -p /var/www/html/public/uploads \
     && chmod -R 775 /var/www/html/storage \
-    && chmod -R 775 /var/www/html/public/uploads \
-    && chown -R www-data:www-data /var/www/html/storage /var/www/html/public/uploads
+    && chmod -R 775 /var/www/html/public/uploads
 
-# Change Apache document root to /public (importanteng-importante ‘to!)
-ENV APACHE_DOCUMENT_ROOT /var/www/html/public
-RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' \
-    /etc/apache2/sites-available/*.conf \
-    /etc/apache2/apache2.conf \
-    /etc/apache2/conf-available/*.conf
+# Composer install
+RUN composer install --no-dev --no-interaction --optimize-autoloader --prefer-dist
 
-# Composer install (safe kahit wala namang composer.json)
-RUN if [ -f composer.json ]; then composer install --no-dev --no-interaction --optimize-autoloader; fi
-
-# Expose port
 EXPOSE 80
-
-# Start Apache
 CMD ["apache2-foreground"]
