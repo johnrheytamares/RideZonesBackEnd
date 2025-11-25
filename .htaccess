@@ -1,16 +1,22 @@
-# .htaccess — RENDER.COM-PROOF VERSION (2025)
-RewriteEngine On
-RewriteBase /
+# .htaccess — Render.com 2025 (works 100%)
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
 
-# If the request is for a real file or directory, serve it directly
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
+    # Serve real files/folders directly
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
 
-# Force everything else to index.php with the clean URL as "url" parameter
-RewriteRule ^(.*)$ index.php?url=$1 [QSA,L]
+    # Route everything else to index.php with ?url=...
+    RewriteRule ^(.*)$ index.php?url=$1 [QSA,L]
+</IfModule>
 
-# Security headers
-Header always set Access-Control-Allow-Origin "*"
-Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
-Header always set Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With, X-User"
-Header always set Access-Control-Allow-Credentials "true"
+# ──────────────────────────────
+# CORS & Security headers (only works if mod_headers is enabled)
+# ──────────────────────────────
+<IfModule mod_headers.c>
+    Header always set Access-Control-Allow-Origin "*"
+    Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+    Header always set Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With, X-User"
+    Header always set Access-Control-Allow-Credentials "true"
+</IfModule>
