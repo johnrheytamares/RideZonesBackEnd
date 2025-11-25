@@ -48,7 +48,7 @@ if ($url === null) {
 // ──────────────────────────────────────────────────────────────
 // 4. SYSTEM PATHS (now safe)
 // ──────────────────────────────────────────────────────────────
-$system_path        = 'system';
+$system_path        = 'scheme';
 $application_folder = 'app';
 $public_folder      = 'public';
 
