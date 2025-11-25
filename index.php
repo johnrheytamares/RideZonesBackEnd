@@ -22,7 +22,7 @@ if ($_SERVER['REQUEST_URI'] === '/__routes' || isset($_GET['show_routes'])) {
     echo "LAVA LUST ACTIVE ROUTES (" . date('Y-m-d H:i:s') . ")\n";
     echo str_repeat("=", 80) . "\n\n";
 
-    $routeFile = ROOT_DIR . 'app/routes.php';
+    $routeFile = ROOT_DIR . 'app/config/routes.php';
 
     if (!file_exists($routeFile)) {
         echo "ERROR: Route file not found: $routeFile\n";
