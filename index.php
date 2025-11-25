@@ -3,7 +3,7 @@ define('PREVENT_DIRECT_ACCESS', TRUE);
 
 // CORS headers (keep at top)
 while (ob_get_level()) ob_end_clean();
-header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Origin: https://ride-zones-front-end-liard.vercel.app');
 header('Access-Control-Allow-Credentials: true');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization, X-User');
