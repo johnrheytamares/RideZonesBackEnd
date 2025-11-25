@@ -34,7 +34,7 @@ RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' \
     /etc/apache2/conf-available/*.conf
 
 # Composer install (safe kahit wala namang composer.json)
-RUN if [ -f composer.json ]; then composer install --no-dev --no-interaction --optimize-autoloader; fi
+RUN composer install --no-dev --no-interaction --optimize-autoloader --prefer-dist
 
 # Expose port
 EXPOSE 80
