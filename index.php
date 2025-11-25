@@ -152,7 +152,9 @@ $system_path        = 'scheme';        // ← FIXED: was 'scheme'
 $application_folder = 'app';
 $public_folder      = 'public';
 
-define('ROOT_DIR', __DIR__ . DIRECTORY_SEPARATOR);
+if (!defined('ROOT_DIR')) {
+    define('ROOT_DIR', __DIR__ . DIRECTORY_SEPARATOR);
+}
 define('SYSTEM_DIR', ROOT_DIR . $system_path . DIRECTORY_SEPARATOR);
 define('APP_DIR', ROOT_DIR . $application_folder . DIRECTORY_SEPARATOR);
 define('PUBLIC_DIR', ROOT_DIR . $public_folder . DIRECTORY_SEPARATOR);
