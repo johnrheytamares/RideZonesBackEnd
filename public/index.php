@@ -19,6 +19,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 
+if ($_SERVER['REQUEST_URI'] === '/health') {
+    header('Content-Type: application/json');
+    echo json_encode([
+        'status'  => 'OK',
+        'message' => 'Lavalust backend is running on Render!',
+        'time'    => date('Y-m-d H:i:s')
+    ]);
+    exit;
+}
+
 // ALWAYS LOAD GOOGLE CLIENT
 require_once __DIR__ . '/../vendor/autoload.php';
 
