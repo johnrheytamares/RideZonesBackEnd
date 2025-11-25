@@ -143,7 +143,10 @@ if ($url === null) {
 // ------------------------------------------------------
 // SYSTEM PATHS
 // ------------------------------------------------------
-$system_path        = 'scheme';
+// ------------------------------------------------------
+// SYSTEM PATHS
+// ------------------------------------------------------
+$system_path        = 'system';        // ← FIXED: was 'scheme'
 $application_folder = 'app';
 $public_folder      = 'public';
 
@@ -151,9 +154,6 @@ define('ROOT_DIR', __DIR__ . DIRECTORY_SEPARATOR);
 define('SYSTEM_DIR', ROOT_DIR . $system_path . DIRECTORY_SEPARATOR);
 define('APP_DIR', ROOT_DIR . $application_folder . DIRECTORY_SEPARATOR);
 define('PUBLIC_DIR', ROOT_DIR . $public_folder . DIRECTORY_SEPARATOR);
-
-// Always load Composer autoload
-require_once __DIR__ . '/vendor/autoload.php';
 
 // ------------------------------------------------------
 // Load Lavalust kernel
