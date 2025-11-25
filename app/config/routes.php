@@ -60,13 +60,12 @@ $router->post('/auth/google', 'AuthController@googleCallback');
 // ===================================================================
 // USER MANAGEMENT — CLEAN SINGULAR ROUTES (PRO LEVEL)
 // ===================================================================
-$router->group('/api/user', function () use ($router) {
-    $router->post('/create', 'ApiController@create');
-    $router->get('/list', 'ApiController@list');
-    $router->get('/profile', 'ApiController@profile');
-    $router->put('/update/{id}', 'ApiController@update');
-    $router->delete('/delete/{id}', 'ApiController@delete');
-});
+$router->get('/users', 'ApiController@listUsers');
+$router->post('/create', 'ApiController@create');
+$router->get('/list', 'ApiController@list');
+$router->get('/profile', 'ApiController@profile');
+$router->put('/update/{id}', 'ApiController@update');
+$router->delete('/delete/{id}', 'ApiController@delete');
 
 // ===================================================================
 // CARS MANAGEMENT
