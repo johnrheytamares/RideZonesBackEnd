@@ -56,6 +56,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
+// ──────────────────────────────────────────────────────────────
+// 1. DEFINE ROOT_DIR EARLY (MUST BE BEFORE ANYTHING USES IT!)
+// ──────────────────────────────────────────────────────────────
+define('ROOT_DIR', __DIR__ . DIRECTORY_SEPARATOR);
+
 // TEMPORARY ROUTE LIST — REMOVE AFTER DEBUGGING
 if ($_SERVER['REQUEST_URI'] === '/__routes' || isset($_GET['show_routes'])) {
     header('Content-Type: text/plain; charset=utf-8');
