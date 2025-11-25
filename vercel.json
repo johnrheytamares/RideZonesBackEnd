@@ -1,16 +1,22 @@
 {
-  "rewrites": [
+  "version": 2,
+  "builds": [
     {
-      "source": "/(.*)",
-      "destination": "/public/index.php"
+      "src": "public/index.php",
+      "use": "@vercel/php",
+      "config": {
+        "runtime": "php-8.2"
+      }
+    },
+    {
+      "src": "public/**/*.php",
+      "use": "@vercel/php"
     }
   ],
-  "functions": {
-    "public/index.php": {
-      "runtime": "provided.al2"
-    },
-    "public/**/*.php": {
-      "runtime": "provided.al2"
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/public/index.php"
     }
-  }
+  ]
 }
