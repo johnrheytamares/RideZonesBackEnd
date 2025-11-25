@@ -1,0 +1,41 @@
+# Environment
+.env
+.env.local
+.env.production
+
+# Composer
+/vendor/
+/app/vendor/
+/composer.lock
+
+# Runtime & Storage
+runtime/*
+!runtime/.htaccess
+!runtime/index.html
+/storage/*.log
+/storage/logs/*
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+
+# User uploads (wag i-commit)
+public/uploads/*
+!/public/uploads/.gitkeep        # optional: para di mawala yung folder
+
+# IDE & OS
+.DS_Store
+.idea/
+.vscode/
+nbproject/
+*.sublime-workspace
+*.sublime-project
+*.tmlanguage.cache
+*.tmPreferences.cache
+*.stTheme.cache
+
+# Node (kung may frontend pa sa future)
+/node_modules/
+/dist/
+
+# Docker
+.dockerignore

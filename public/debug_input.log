@@ -1,0 +1,91 @@
+{"car_id":12,"user_id":1,"dealer_id":1,"appointment_at":"2025-11-22T15:00:00","notes":null}{
+  "car_id": 5,
+  "user_id": 3,
+  "dealer_id": 1,
+  "appointment_at": "2025-12-15T10:30:00",
+  "notes": "Gusto ko po test drive sa highway, salamat!"
+}
+{
+  "car_id": 5,
+  "user_id": 3,
+  "dealer_id": 1,
+  "appointment_at": "2025-12-15T10:30:00",
+  "notes": "Gusto ko po test drive sa highway, salamat!"
+}
+{
+  "car_id": 5,
+  "user_id": 3,
+  "dealer_id": 1,
+  "appointment_at": "2025-12-15T10:30:00",
+  "notes": "Gusto ko po test drive sa highway, salamat!"
+}
+{
+  "car_id": 5,
+  "user_id": 3,
+  "dealer_id": 1,
+  "appointment_at": "2025-12-15T10:30:00",
+  "notes": "Gusto ko po test drive sa highway, salamat!"
+}
+{
+  "car_id": 5,
+  "user_id": 3,
+  "dealer_id": 1,
+  "appointment_at": "2025-12-15T10:30:00",
+  "notes": "Gusto ko po test drive sa highway, salamat!"
+}
+{
+  "car_id": 5,
+  "user_id": 3,
+  "dealer_id": 1,
+  "appointment_at": "2025-12-15T10:30:00",
+  "notes": "Gusto ko po test drive sa highway, salamat!"
+}
+{
+  "car_id": 5,
+  "user_id": 1,
+  "dealer_id": 1,
+  "appointment_at": "2025-12-15T10:30:00",
+  "notes": "Gusto ko po test drive sa highway, salamat!"
+}
+{
+  "car_id": 5,
+  "user_id": 1,
+  "dealer_id": 1,
+  "appointment_at": "2025-12-19T10:30:00",
+  "notes": "Gusto ko po test drive sa highway, salamat!"
+}
+email=johnrheynedamotamares2005%40gmail.com&password=StrongPass123
+{"car_id":13,"full_name":"Admin User","email":"johnrheynedamotamares@gmail.com","phone":"09274886292","appointment_at":"2025-11-24T23:00:00","notes":"Haaa","dealer_id":1}
+{"car_id":14,"full_name":"Admin User","email":"johnrheynedamotamares@gmail.com","phone":"09274886292","appointment_at":"2025-11-25T00:06:00","notes":null,"dealer_id":1}
+{"car_id":14,"appointment_at":"2025-11-26 00:12:00","user_id":0,"dealer_id":1,"notes":null,"full_name":"Admin User","email":"johnrheynedamotamares@gmail.com","phone":null}
+{
+  "car_id": 1,
+  "user_id": 2,
+  "dealer_id": 1,
+  "appointment_at": "2025-12-01 14:30:00",
+  "notes": "I want to inspect the engine"
+}
+
+{
+  "car_id": 1,
+  "user_id": 2,
+  "dealer_id": 11,
+  "appointment_at": "2025-12-01 14:30:00",
+  "notes": "I want to inspect the engine"
+}
+
+{
+  "car_id": 1,
+  "user_id": 5,
+  "dealer_id": 11,
+  "appointment_at": "2025-12-01 14:30:00",
+  "notes": "I want to inspect the engine"
+}
+
+{"car_id": 6,
+"user_id": 5,
+"dealer_id": 1,
+"appointment_at": "2025-12-01 14:30:00",
+"notes": "I want to inspect the engine"}
+
+{"car_id":14,"appointment_at":"2025-11-27 00:47:00","user_id":0,"dealer_id":1,"notes":null,"full_name":"Admin User","email":"johnrheynedamotamares@gmail.com","phone":null}
