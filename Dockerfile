@@ -1,7 +1,7 @@
-# Use PHP with Apache
+# Base image: PHP with Apache
 FROM php:8.2-apache
 
-# Install dependencies for Composer and PDO MySQL
+# Install dependencies
 RUN apt-get update && apt-get install -y unzip git curl \
     && docker-php-ext-install pdo pdo_mysql \
     && a2enmod rewrite
@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y unzip git curl \
 # Set working directory
 WORKDIR /var/www/app
 
-# Copy entire project
+# Copy project files
 COPY . /var/www/app/
 
 # Copy custom Apache config
@@ -23,8 +23,8 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
 RUN chown -R www-data:www-data /var/www/app \
     && chmod -R 755 /var/www/app
 
-# Expose the port dynamically
-EXPOSE 80
+# Expose port (Render sets the actual port)
+EXPOSE 10000
 
-# Start Apache using the Render port
-CMD ["sh", "-c", "sed -i 's/80/${PORT}/g' /etc/apache2/ports.conf && apache2-foreground"]
+# Start Apache
+CMD ["apache2-foreground"]
