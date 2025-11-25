@@ -3,10 +3,7 @@
   "builds": [
     {
       "src": "public/index.php",
-      "use": "@vercel/php",
-      "config": {
-        "runtime": "php-8.2"
-      }
+      "use": "@vercel/php"
     },
     {
       "src": "public/**/*.php",
