@@ -1,6 +1,13 @@
 RewriteEngine On
 
-# Redirect all requests to index.php
+# Make sure we are in the public folder
+RewriteBase /
+
+# If the request is NOT a real file
 RewriteCond %{REQUEST_FILENAME} !-f
+
+# If the request is NOT a real directory
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^(.*)$ index.php [QSA,L]
+
+# Pass everything to index.php WITH the URI
+RewriteRule ^(.*)$ index.php?/$1 [QSA,L]
