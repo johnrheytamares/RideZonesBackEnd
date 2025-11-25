@@ -90,11 +90,11 @@ $router->get('/dataappointments', 'ApiController@dataappointments');
 // ===================================================================
 // DEALERS MANAGEMENT
 // ===================================================================
-$router->get('/dealers', 'ApiController@listDealers');
-$router->post('/dealers', 'ApiController@createDealer');
-$router->put('/dealers/{id}', 'ApiController@updateDealer');
-$router->delete('/dealers/{id}', 'ApiController@deleteDealer');
-$router->post('/dealers/upload-logo', 'ApiController@uploadDealerLogo');
+$router->get('/listdealers', 'ApiController@listDealers');
+$router->post('/createdealer', 'ApiController@createDealer');
+$router->put('/updatedealer/{id}', 'ApiController@updateDealer');
+$router->delete('/deletedealer/{id}', 'ApiController@deleteDealer');
+$router->post('/upload-dealer-logo', 'ApiController@uploadDealerLogo');
 // ===================================================================
 // FILES
 // ===================================================================
