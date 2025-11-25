@@ -56,13 +56,66 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-// Health check endpoint
-if ($_SERVER['REQUEST_URI'] === '/health') {
-    echo json_encode([
-        'status'  => 'OK',
-        'message' => 'Lavalust backend is running!',
-        'time'    => date('Y-m-d H:i:s')
-    ]);
+// TEMPORARY ROUTE LIST — REMOVE AFTER DEBUGGING
+if ($_SERVER['REQUEST_URI'] === '/__routes' || isset($_GET['show_routes'])) {
+    header('Content-Type: text/plain; charset=utf-8');
+    echo "LavaLust Active Routes (" . date('Y-m-d H:i:s') . ")\n";
+    echo str_repeat("=", 70) . "\n\n";
+
+    $routeFile = ROOT_DIR . 'app/routes.php';   // <-- your actual file
+
+    if (!file_exists($routeFile)) {
+        echo "Route file not found: $routeFile\n";
+        exit;
+    }
+
+    $content = file_get_contents($routeFile);
+    $lines   = explode("\n", $content);
+
+    foreach ($lines as $line) {
+        $line = trim($line);
+
+        // Skip empty lines and comments
+        if ($line === '' || str_starts_with($line, '//') || str_starts_with($line, '/*') || str_starts_with($line, '*')) {
+            continue;
+        }
+
+        // Match normal routes: $router->get('/listcars', 'Controller::method');
+        if (preg_match("/\\$router->(get|post|put|delete|any)\\s*\\(\\s*['\"]([^'\"]+)['\"]\\s*,/", $line, $m)) {
+            $method = strtoupper($m[1]);
+            $uri    = $m[2];
+            echo sprintf(" %-7s %s\n", $method, $uri);
+            continue;
+        }
+
+        // Match grouped routes inside $router->group('/prefix', function() use ($router) {
+        if (preg_match("/\\$router->(get|post|put|delete|any)\\s*\\(\\s*['\"]([^'\"]+)['\"]\\s*,/", $line, $m)) {
+            $method = strtoupper($m[1]);
+            $uri    = $m[2];
+
+            // Detect if we're inside /api/user group
+            $previousLines = array_slice($lines, 0, array_search($line, $lines));
+            $inUserGroup = false;
+            foreach (array_reverse($previousLines) as $prev) {
+                if (trim($prev) === '$router->group(\'/api/user\', function () use ($router) {') {
+                    $inUserGroup = true;
+                    break;
+                }
+            }
+
+            if ($inUserGroup) {
+                $uri = '/api/user' . $uri;
+            }
+
+            echo sprintf(" %-7s %s\n", $method, $uri);
+        }
+    }
+
+    echo "\nQuick test (rewrite still broken → use index.php/ prefix):\n";
+    echo "curl https://ridezonesbackends.onrender.com/index.php/listcars\n";
+    echo "curl https://ridezonesbackends.onrender.com/index.php/dealers\n";
+    echo "curl -X POST https://ridezonesbackends.onrender.com/index.php/login\n";
+    echo "\nVisit: https://ridezonesbackends.onrender.com/__routes  (or ?show_routes=1)\n";
     exit;
 }
 
