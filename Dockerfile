@@ -17,10 +17,14 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Copy lahat ng files
 COPY . /var/www/html/
 
-# Set permissions
+# Set permissions (safe kahit wala yung folders)
 RUN chown -R www-data:www-data /var/www/html \
-    && chmod -R 755 /var/www/html/storage \
-    && chmod -R 755 /var/www/html/public/uploads
+    && chmod -R 755 /var/www/html \
+    && mkdir -p /var/www/html/storage \
+    && mkdir -p /var/www/html/public/uploads \
+    && chmod -R 775 /var/www/html/storage \
+    && chmod -R 775 /var/www/html/public/uploads \
+    && chown -R www-data:www-data /var/www/html/storage /var/www/html/public/uploads
 
 # Change Apache document root to /public (importanteng-importante ‘to!)
 ENV APACHE_DOCUMENT_ROOT /var/www/html/public
