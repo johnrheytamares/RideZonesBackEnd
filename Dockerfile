@@ -4,8 +4,8 @@ FROM php:8.2-apache
 
 # Install dependencies for Composer and PDO MySQL
 
-RUN apt-get update && apt-get install -y unzip git curl 
-&& docker-php-ext-install pdo pdo_mysql 
+RUN apt-get update && apt-get install -y unzip git curl \
+&& docker-php-ext-install pdo pdo_mysql \
 && a2enmod rewrite
 
 # Set working directory
