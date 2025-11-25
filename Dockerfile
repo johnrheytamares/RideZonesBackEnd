@@ -10,27 +10,31 @@ RUN apt-get update && apt-get install -y \
 # Enable rewrite
 RUN a2enmod rewrite
 
-# Install Composer FIRST (bago pa mag-COPY ng code)
+# Install Composer first
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Copy code AFTER composer is installed
+# Copy code
 COPY . /var/www/html/
 
-# Change document root
-ENV APACHE_DOCUMENT_ROOT /var/www/html/public
-RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' \
-    /etc/apache2/sites-available/*.conf \
-    /etc/apache2/apache2.conf \
-    /etc/apache2/conf-available/*.conf
+# NUCLEAR DOCUMENT ROOT FIX — WALANG LABAN NA
+RUN echo '\
+<VirtualHost *:80>\n\
+    DocumentRoot /var/www/html/public\n\
+    <Directory /var/www/html/public>\n\
+        AllowOverride All\n\
+        Require all granted\n\
+        RewriteEngine On\n\
+    </Directory>\n\
+</VirtualHost>' > /etc/apache2/sites-available/000-default.conf
 
-# Create folders + permissions
+# Permissions
 RUN mkdir -p /var/www/html/storage /var/www/html/public/uploads \
     && chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html \
     && chmod -R 775 /var/www/html/storage \
     && chmod -R 775 /var/www/html/public/uploads
 
-# Composer install (ngayon sure na makikita na niya ang composer.json)
+# Composer install
 RUN composer install --no-dev --no-interaction --optimize-autoloader --prefer-dist
 
 EXPOSE 80
