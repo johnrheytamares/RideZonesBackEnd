@@ -45,61 +45,60 @@ defined('PREVENT_DIRECT_ACCESS') OR exit('No direct script access allowed');
 
 //$router->get('/', 'Welcome::index');
 
-$router->post('/forgot-password', 'ApiController::forgotPassword');
-$router->post('/reset-password', 'ApiController::resetPassword');
+$router->post('/forgot-password', 'ApiController@forgotPassword');
+$router->post('/reset-password', 'ApiController@resetPassword');
 // ===================================================================
 // AUTH & PUBLIC ROUTES
 // ===================================================================
-$router->post('/login', 'ApiController::login');
-$router->post('/logout', 'AuthController::logout');
-$router->post('/refresh', 'ApiController::refresh');
-$router->post('/otp', 'ApiController::sendVerificationCode');
-$router->post('/otp/verify', 'ApiController::verifyCode');
-$router->get('/email', 'ApiController::sendTestEmail'); // test only
-$router->post('/auth/google', 'AuthController::googleCallback');
+$router->post('/login', 'ApiController@login');
+$router->post('/logout', 'AuthController@logout');
+$router->post('/refresh', 'ApiController@refresh');
+$router->post('/otp', 'ApiController@sendVerificationCode');
+$router->post('/otp/verify', 'ApiController@verifyCode');
+$router->get('/email', 'ApiController@sendTestEmail'); // test only
+$router->post('/auth/google', 'AuthController@googleCallback');
 // ===================================================================
 // USER MANAGEMENT — CLEAN SINGULAR ROUTES (PRO LEVEL)
 // ===================================================================
 $router->group('/api/user', function () use ($router) {
-    $router->post('/create', 'ApiController::create');
-    $router->get('/list', 'ApiController::list');
-    $router->get('/profile', 'ApiController::profile');
-    $router->put('/update/{id}', 'ApiController::update');
-    $router->delete('/delete/{id}', 'ApiController::delete');
+    $router->post('/create', 'ApiController@create');
+    $router->get('/list', 'ApiController@list');
+    $router->get('/profile', 'ApiController@profile');
+    $router->put('/update/{id}', 'ApiController@update');
+    $router->delete('/delete/{id}', 'ApiController@delete');
 });
 
 // ===================================================================
 // CARS MANAGEMENT
 // ===================================================================
-$router->get('/listcars', 'ApiController::listCars');
-$router->post('/createcars', 'ApiController::createCars');
-$router->put('/updatecars/{id}', 'ApiController::updateCars');
-$router->delete('/deletecars/{id}', 'ApiController::deleteCars');
-$router->get('/searchcars', 'ApiController::listCarsPaginated');
-$router->post('/upload-car-image', 'ApiController::uploadCarImage');
-$router->get('/cardistribution', 'ApiController::cardistribution');
+$router->get('/listcars', 'ApiController@listCars');
+$router->post('/createcars', 'ApiController@createCars');
+$router->put('/updatecars/{id}', 'ApiController@updateCars');
+$router->delete('/deletecars/{id}', 'ApiController@deleteCars');
+$router->get('/searchcars', 'ApiController@listCarsPaginated');
+$router->post('/upload-car-image', 'ApiController@uploadCarImage');
+$router->get('/cardistribution', 'ApiController@cardistribution');
 // ===================================================================
 // APPOINTMENTS
 // ===================================================================
-$router->post('/createappointment', 'ApiController::createAppointment');
-$router->get('/listappointment', 'ApiController::listAppointments');
-$router->put('/updateappointment/{id}', 'ApiController::updateAppointment');
-$router->delete('/deleteappointment/{id}', 'ApiController::deleteAppointment');
-$router->get('/get-booked-dates/{car_id}', 'ApiController::getBookedDates');
-$router->get('/dataappointments', 'ApiController::dataappointments');
+$router->post('/createappointment', 'ApiController@createAppointment');
+$router->get('/listappointment', 'ApiController@listAppointments');
+$router->put('/updateappointment/{id}', 'ApiController@updateAppointment');
+$router->delete('/deleteappointment/{id}', 'ApiController@deleteAppointment');
+$router->get('/get-booked-dates/{car_id}', 'ApiController@getBookedDates');
+$router->get('/dataappointments', 'ApiController@dataappointments');
 // ===================================================================
 // DEALERS MANAGEMENT
 // ===================================================================
-$router->get('/dealers', 'ApiController::listDealers');
-$router->post('/dealers', 'ApiController::createDealer');
-$router->put('/dealers/{id}', 'ApiController::updateDealer');
-$router->delete('/dealers/{id}', 'ApiController::deleteDealer');
-$router->post('/dealers/upload-logo', 'ApiController::uploadDealerLogo');
+$router->get('/dealers', 'ApiController@listDealers');
+$router->post('/dealers', 'ApiController@createDealer');
+$router->put('/dealers/{id}', 'ApiController@updateDealer');
+$router->delete('/dealers/{id}', 'ApiController@deleteDealer');
+$router->post('/dealers/upload-logo', 'ApiController@uploadDealerLogo');
 // ===================================================================
 // FILES
 // ===================================================================
-$router->get('/download/{filename}', 'ApiController::downloadFile');
-
+$router->get('/download/{filename}', 'ApiController@downloadFile');
 // ===================================================================
 // CAR COMPARISON
-$router->post('/api/compare/cars', 'ApiController::compareCars');
+$router->post('/api/compare/cars', 'ApiController@compareCars');
