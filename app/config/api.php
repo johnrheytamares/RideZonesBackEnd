@@ -96,7 +96,7 @@ $config['refresh_token_key'] = 'BDswlrEaYWAgeJ4VurGe';
 | already deployed.
 |
 */
-$config['allow_origin'] = '*';
+$config['allow_origin'] = 'https://ride-zones-front-end-liard.vercel.app';
 
 /*
 |--------------------------------------------------------------------------
