@@ -7,6 +7,8 @@ class AuthController extends Controller {
 
 public function googleCallback()
 {
+
+
     $input = json_decode(file_get_contents('php://input'), true);
     $token = $input['credential'] ?? null;
 

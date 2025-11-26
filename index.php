@@ -2,18 +2,26 @@
 define('PREVENT_DIRECT_ACCESS', TRUE);
 
 // CORS headers (keep at top)
-    while (ob_get_level()) ob_end_clean();
+// Limpiin muna ang output buffer para walang maunang output
+while (ob_get_level()) ob_end_clean();
 
-    header('Access-Control-Allow-Origin: https://ride-zones-front-end-liard.vercel.app');
-    header('Access-Control-Allow-Credentials: true');
-    header('Access-Control-Allow-Methods: POST, OPTIONS');
-    header('Access-Control-Allow-Headers: Content-Type');
-    header('Content-Type: application/json');
+// CORS headers – DAPAT UNA ITO bago mag-output ng kahit anong JSON
+header('Access-Control-Allow-Origin: https://ride-zones-front-end-liard.vercel.app');
+header('Access-Control-Allow-Credentials: true');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-User, X-Requested-With');
 
-    if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-        http_response_code(200);
-        exit;
-    }
+// Optional pero recommended
+header('Access-Control-Max-Age: 86400'); // 24 hours cache ng preflight
+
+// Content type after CORS headers
+header('Content-Type: application/json');
+
+// Handle preflight request
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
 
 // === DEFINE ROOT_DIR AGAD — DAPAT PINAKAUNA ===
 define('ROOT_DIR', __DIR__ . DIRECTORY_SEPARATOR);
