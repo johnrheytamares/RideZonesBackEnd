@@ -34,13 +34,13 @@ public function googleCallback()
         $picture  = $payload['picture'] ?? null;
 
         // Check existing account
-$query = $this->db
-    ->table('users')
-    ->where('google_id', $googleId)
-    ->or_where('email', $email)
-    ->get(); // executes the query
+        $query = $this->db
+            ->table('users')
+            ->where('google_id', $googleId)
+            ->or_where('email', $email)
+            ->get(); // executes the query
 
-$user = $query[0] ?? null; // get the first row if exists
+        $user = $query[0] ?? null; // get the first row if exists
 
 
 
@@ -93,7 +93,30 @@ $user = $query[0] ?? null; // get the first row if exists
         ]);
 
     } catch (Exception $e) {
-        error_log('Google Login Error: ' . $e->getMessage());
+    error_log('Google Login Error: ' . $e->getMessage());
+
+        if ($this->DEV_MODE) {
+
+            // BYPASS USER
+            $fakeUser = [
+                'id' => 23,
+                'name' => 'admin',
+                'email' => 'johnrheynedamotamares2005@gmail.com',
+                'role' => 'admin',
+                'dealer_id' => 1,
+                'avatar' => null
+            ];
+
+            $this->setUserSession($fakeUser);
+
+            echo json_encode([
+                'success' => true,
+                'user' => $fakeUser,
+                'dev_mode' => true
+            ]);
+            exit;
+        }
+
         echo json_encode(['success' => false, 'error' => 'Authentication failed']);
     }
     exit;
