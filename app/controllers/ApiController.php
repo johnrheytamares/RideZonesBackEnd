@@ -789,54 +789,36 @@ public function uploadCarImage()
 
     // Validate upload error
     if ($file['error'] !== UPLOAD_ERR_OK) {
-        $errors = [
-            UPLOAD_ERR_INI_SIZE   => 'File exceeds upload_max_filesize',
-            UPLOAD_ERR_FORM_SIZE  => 'File exceeds MAX_FILE_SIZE',
-            UPLOAD_ERR_PARTIAL    => 'File only partially uploaded',
-            UPLOAD_ERR_NO_TMP_DIR => 'Missing temporary folder',
-            UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk',
-            UPLOAD_ERR_EXTENSION  => 'File upload stopped by extension',
-        ];
-        $msg = $errors[$file['error']] ?? 'Unknown upload error';
-        return $this->api->respond_error($msg, 400);
+        return $this->api->respond_error('File upload error: ' . $file['error'], 400);
     }
 
     // Validate file type
-    $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+    $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
     if (!in_array($file['type'], $allowedTypes)) {
-        return $this->api->respond_error('Invalid file type. Only JPG/PNG allowed.', 400);
+        return $this->api->respond_error('Only JPG, PNG, WebP allowed.', 400);
     }
 
-    // Validate file size (max 2MB)
-    if ($file['size'] > 2 * 1024 * 1024) {
-        return $this->api->respond_error('File too large. Max 2MB allowed.', 400);
+    // Validate file size (max 3MB para safe)
+    if ($file['size'] > 3 * 1024 * 1024) {
+        return $this->api->respond_error('File too large. Max 3MB allowed.', 400);
     }
 
-    // Create upload directory if not exists
-    $uploadDir = __DIR__ . '/../../../public/uploads/cars/';
-    if (!is_dir($uploadDir)) {
-        if (!mkdir($uploadDir, 0755, true)) {
-            return $this->api->respond_error('Failed to create upload directory', 500);
-        }
+    // Convert to base64
+    $imageData = file_get_contents($file['tmp_name']);
+    $base64 = 'data:' . $file['type'] . ';base64,' . base64_encode($imageData);
+
+    // Optional: limit size para hindi masyado malaki sa DB (3MB raw = ~4MB base64)
+    if (strlen($base64) > 5 * 1024 * 1024) { // ~5MB encoded
+        return $this->api->respond_error('Image too large after encoding.', 400);
     }
 
-    // Generate unique filename
-    $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
-    $filename = time() . '_' . uniqid() . '.' . $ext;
-    $targetPath = $uploadDir . $filename;
-
-    // Move uploaded file
-    if (!move_uploaded_file($file['tmp_name'], $targetPath)) {
-        return $this->api->respond_error('Failed to save file', 500);
-    }
-
-    // Return public URL
-    $publicUrl = '/uploads/cars/' . $filename;
-
+    // Return base64 string — i-save mo 'to sa `main_image` column ng cars table
     return $this->api->respond([
         'status' => 'success',
-        'url'    => $publicUrl,
-        'path'   => $publicUrl  // same as url for DB
+        'url'    => $base64,
+        'path'   => $base64,
+        'size'   => strlen($base64) . ' bytes (base64)',
+        'tip'    => 'This is a base64 image — no file saved, works everywhere!'
     ]);
 }
 
