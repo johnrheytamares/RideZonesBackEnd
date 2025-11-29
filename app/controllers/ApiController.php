@@ -539,13 +539,6 @@ public function listCarsPaginated() {
 // ===============================
 //  Appointment Management
 // ===============================
-
-// ===================================================================
-// CREATE APPOINTMENT (Supports Guest + Logged-in Users)
-// ===================================================================
-// ===================================================================
-// CREATE APPOINTMENT (100% Guest-Friendly, No user_id Required)
-// ===================================================================
 public function createAppointment()
 {
     $this->api->require_method('POST');
@@ -1056,7 +1049,7 @@ public function deleteDealer($id)
 // Dapat nandito ‘to sa loob ng ApiController class
 private function sendAppointmentStatusEmail($appointmentData, $carInfo, $userInfo, $newStatus)
 {
-    $resend = \Resend::client('re_G4tRDkK9_Kjt2syMEJJJMT8zrScubiW54'); // o yung bagong key mo
+    $resend = \Resend::client('re_7hRjc2KA_P8stiWxVFw6wdvkMcyrFfe9S'); // o yung bagong key mo
 
     $dateFormatted = date('F j, Y \a\t g:i A', strtotime($appointmentData['appointment_at']));
     $carName = trim("{$carInfo['make']} {$carInfo['model']} {$carInfo['variant']} ({$carInfo['year']})");
@@ -1156,7 +1149,7 @@ private function sendAppointmentStatusEmail($appointmentData, $carInfo, $userInf
 // 1. PARA SA BOOKING LANG (Pending)
 private function sendBookingConfirmationEmail($appointmentData, $carInfo, $userInfo)
 {
-    $resend = \Resend::client('re_G4tRDkK9_Kjt2syMEJJJMT8zrScubiW54');
+    $resend = \Resend::client('re_7hRjc2KA_P8stiWxVFw6wdvkMcyrFfe9S');
 
     $dateFormatted = date('F j, Y \a\t g:i A', strtotime($appointmentData['appointment_at']));
     $carName = "{$carInfo['make']} {$carInfo['model']} {$carInfo['variant']} ({$carInfo['year']})";
@@ -1240,6 +1233,8 @@ public function forgotPassword()
 
     return $this->api->respond(['message' => $responseMessage]);
 }
+
+
 
 // ===================================================================
 // RESET PASSWORD — Full working version
