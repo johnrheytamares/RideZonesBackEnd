@@ -2,7 +2,7 @@
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-
+require_once __DIR__ . '/../../vendor/autoload.php';
 class ApiController extends Controller {
     private $user_id;
 
@@ -1120,160 +1120,144 @@ public function uploadDealerLogo()
 // Dapat nandito ‘to sa loob ng ApiController class
 private function sendAppointmentStatusEmail($appointmentData, $carInfo, $userInfo, $newStatus)
 {
-    $mail = new PHPMailer(true);
+    $resend = \Resend::client('re_G4tRDkK9_Kjt2syMEJJJMT8zrScubiW54'); // o yung bagong key mo
+
+    $dateFormatted = date('F j, Y \a\t g:i A', strtotime($appointmentData['appointment_at']));
+    $carName = trim("{$carInfo['make']} {$carInfo['model']} {$carInfo['variant']} ({$carInfo['year']})");
+
+    $status = strtolower($newStatus);
+    $config = [
+        'approved' => [
+            'title'   => 'Appointment APPROVED!',
+            'message' => 'Your appointment has been <strong style="color:#27ae60;font-size:20px">APPROVED</strong>!',
+            'color'   => '#27ae60',
+            'gradient' => 'linear-gradient(135deg, #27ae60, #1e8449)',
+            'subject' => "Appointment APPROVED! {$carInfo['make']} {$carInfo['model']}"
+        ],
+        'completed' => [
+            'title'   => 'Thank You for Visiting!',
+            'message' => 'Your appointment has been marked as <strong style="color:#3498db">COMPLETED</strong>.',
+            'color'   => '#3498db',
+            'gradient' => 'linear-gradient(135deg, #3498db, #2980b9)',
+            'subject' => 'Thank You! Appointment Completed'
+        ],
+        'cancelled' => [
+            'title'   => 'Appointment Cancelled',
+            'message' => 'We’re sorry, but your appointment has been <strong style="color:#e74c3c">CANCELLED</strong>.',
+            'color'   => '#e74c3c',
+            'gradient' => 'linear-gradient(135deg, #e74c3c, #c0392b)',
+            'subject' => 'Appointment Cancelled'
+        ],
+        'rejected' => [
+            'title'   => 'Appointment Rejected',
+            'message' => 'We’re sorry, but your appointment has been <strong style="color:#e74c3c">REJECTED</strong>.',
+            'color'   => '#e74c3c',
+            'gradient' => 'linear-gradient(135deg, #e74c3c, #c0392b)',
+            'subject' => 'Appointment Rejected'
+        ]
+    ];
+
+    // Kung hindi kasama sa list (ex: pending), wag mag-send
+    if (!isset($config[$status])) return;
+
+    $c = $config[$status];
+
+    $html = "
+    <div style='font-family: Arial, sans-serif; max-width: 600px; margin: auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1);'>
+        <div style='background: {$c['gradient']}; padding: 40px 20px; text-align: center; color: white;'>
+            <h1 style='margin:0; font-size: 32px;'>{$c['title']}</h1>
+        </div>
+        <div style='padding: 40px 30px; text-align: center;'>
+            <p style='font-size: 18px;'>Hi <strong>{$userInfo['name']}</strong>,</p>
+            <p style='font-size: 17px; line-height: 1.6;'>{$c['message']}</p>
+            
+            <div style='background: #f8f9fa; padding: 30px; border-radius: 12px; margin: 35px 0; border-left: 7px solid {$c['color']};'>
+                <h2 style='margin-top:0; color: #2c3e50;'>Appointment Details</h2>
+                <p style='margin:8px 0; font-size:16px;'><strong>Car:</strong> {$carName}</p>
+                <p style='margin:8px 0; font-size:16px;'><strong>Date & Time:</strong> {$dateFormatted}</p>"
+                . (!empty($appointmentData['notes']) ? "<p style='margin:15px 0 0;'><strong>Your Notes:</strong><br><em>{$appointmentData['notes']}</em></p>" : "")
+            . "</div>";
+
+    // Optional button for completed
+    if ($status === 'completed') {
+        $html .= "<p>We'd love to see you again!</p>
+                  <a href='https://ride-zones-front-end-liard.vercel.app/cars' style='background:{$c['color']};color:white;padding:16px 36px;text-decoration:none;border-radius:10px;font-weight:bold;font-size:16px;'>
+                      Browse More Luxury Cars
+                  </a>";
+    }
+
+    // Optional button for cancelled/rejected
+    if (in_array($status, ['cancelled', 'rejected'])) {
+        $html .= "<p>You can book another slot anytime.</p>
+                  <a href='https://ride-zones-front-end-liard.vercel.app/cars' style='background:{$c['color']};color:white;padding:16px 36px;text-decoration:none;border-radius:10px;font-weight:bold;font-size:16px;'>
+                      Book Another Appointment
+                  </a>";
+    }
+
+    $html .= "
+            <div style='margin-top:50px; padding-top:20px; border-top:2px dashed #ddd; color:#777; font-size:14px;'>
+                Thank you for choosing RIDEZONE — Luxury Redefined.
+            </div>
+        </div>
+        <div style='background: #1a1a1a; color: #aaa; padding: 20px; text-align: center; font-size: 13px;'>
+            © " . date('Y') . " RIDEZONE • Philippines' Premier Luxury Car Platform
+        </div>
+    </div>";
 
     try {
-        // SMTP Config (same as your working one)
-        $mail->isSMTP();
-        $mail->Host       = 'smtp.gmail.com';
-        $mail->SMTPAuth   = true;
-        $mail->Username   = 'johnrheynedamotamares2005@gmail.com';
-        $mail->Password   = 'isebrtolhpyifuhh';
-        $mail->SMTPSecure = 'tls';
-        $mail->Port       = 587;
-        $mail->setFrom('johnrheynedamotamares2005@gmail.com', 'LavaLust Cars');
-        $mail->addAddress($userInfo['email'], $userInfo['name']);
-        $mail->isHTML(true);
-
-        $dateFormatted = date('F j, Y \a\t g:i A', strtotime($appointmentData['appointment_at']));
-
-        // DYNAMIC EMAIL BASED ON STATUS
-        switch (strtolower($newStatus)) {
-            case 'approved':
-                $mail->Subject = "Appointment APPROVED! {$carInfo['make']} {$carInfo['model']}";
-                $mail->Body = "
-                <div style='font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #ddd; border-radius: 12px; overflow: hidden;'>
-                    <div style='background: #27ae60; color: white; padding: 30px; text-align: center;'>
-                        <h1>Appointment APPROVED!</h1>
-                    </div>
-                    <div style='padding: 30px; background: #f8f9fa; text-align: center;'>
-                        <p>Congratulations <strong>{$userInfo['name']}</strong>!</p>
-                        <p>Your appointment has been <strong style='color: #27ae60; font-size: 20px;'>APPROVED</strong>!</p>
-                        <p>We’re excited to see you soon!</p>
-                        
-                        <div style='background: white; padding: 25px; border-radius: 10px; margin: 30px 0; border-left: 6px solid #27ae60;'>
-                            <h2>Appointment Details</h2>
-                            <p><strong>Car:</strong> {$carInfo['make']} {$carInfo['model']} {$carInfo['variant']} ({$carInfo['year']})</p>
-                            <p><strong>Date & Time:</strong> {$dateFormatted}</p>
-                            " . (!empty($appointmentData['notes']) ? "<p><strong>Your Notes:</strong><br><em>{$appointmentData['notes']}</em></p>" : "") . "
-                        </div>
-                        
-                        <hr style='margin:40px 0; border:1px dashed #ddd;'>
-                        <p style='color:#777;font-size:13px;text-align:center;'>
-                            © " . date('Y') . " LavaLust Cars. See you soon!
-                        </p>
-                    </div>
-                </div>";
-                break;
-
-            case 'completed':
-                $mail->Subject = "Thank You! Appointment Completed";
-                $mail->Body = "
-                <div style='font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #ddd; border-radius: 12px; overflow: hidden;'>
-                    <div style='background: #3498db; color: white; padding: 30px; text-align: center;'>
-                        <h1>Thank You for Visiting!</h1>
-                    </div>
-                    <div style='padding: 30px; background: #f8f9fa; text-align: center;'>
-                        <p>Hi <strong>{$userInfo['name']}</strong>,</p>
-                        <p>Your appointment has been marked as <strong style='color: #3498db;'>COMPLETED</strong>.</p>
-                        <p>We hope you had a great experience with us!</p>
-                        
-                        <div style='background: white; padding: 25px; border-radius: 10px; margin: 30px 0;'>
-                            <p><strong>Car:</strong> {$carInfo['make']} {$carInfo['model']}</p>
-                            <p><strong>Date:</strong> {$dateFormatted}</p>
-                        </div>
-
-                        <p>We'd love to see you again!</p>
-                        <a href='http://localhost:5173/cars-page' style='background:#3498db;color:white;padding:14px 32px;text-decoration:none;border-radius:8px;font-weight:bold;'>
-                            Browse More Cars
-                        </a>
-                    </div>
-                </div>";
-                break;
-
-            case 'cancelled':
-            case 'rejected':
-                $statusText = ucfirst($newStatus);
-                $mail->Subject = "Appointment Update: {$statusText}";
-                $mail->Body = "
-                <div style='font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #ddd; border-radius: 12px; overflow: hidden;'>
-                    <div style='background: #e74c3c; color: white; padding: 30px; text-align: center;'>
-                        <h1>Appointment {$statusText}</h1>
-                    </div>
-                    <div style='padding: 30px; background: #f8f9fa;'>
-                        <p>Hello <strong>{$userInfo['name']}</strong>,</p>
-                        <p>We're sorry to inform you that your appointment has been <strong style='color: #e74c3c;'>{$statusText}</strong>.</p>
-                        
-                        <div style='background: white; padding: 25px; border-radius: 10px; margin: 25px 0; border-left: 6px solid #e74c3c;'>
-                            <p><strong>Car:</strong> {$carInfo['make']} {$carInfo['model']}</p>
-                            <p><strong>Scheduled:</strong> {$dateFormatted}</p>
-                        </div>
-
-                        <p>You can book another slot anytime.</p>
-                        <a href='http://localhost:5173/cars-page' style='background:#e74c3c;color:white;padding:14px 32px;text-decoration:none;border-radius:8px;font-weight:bold;'>
-                            Book Another Appointment
-                        </a>
-                    </div>
-                </div>";
-                break;
-
-            default:
-                return; // No email for 'pending'
-        }
-
-        $mail->send();
-        error_log("Status email ({$newStatus}) sent to: {$userInfo['email']}");
-
-    } catch (Exception $e) {
-        error_log("Status email failed ({$newStatus}): " . $mail->ErrorInfo);
-        // Silent fail — hindi ma-block ang update
+        $resend->emails->send([
+            'from'    => 'RIDEZONE <onboarding@resend.dev>',
+            'to'      => $userInfo['email'],
+            'subject' => $c['subject'],
+            'html'    => $html
+        ]);
+        error_log("Appointment {$newStatus} email sent via Resend to: {$userInfo['email']}");
+    } catch (\Exception $e) {
+        error_log("Resend appointment {$newStatus} email failed: " . $e->getMessage());
     }
 }
 
 // 1. PARA SA BOOKING LANG (Pending)
 private function sendBookingConfirmationEmail($appointmentData, $carInfo, $userInfo)
 {
-    $mail = new PHPMailer(true);
+    $resend = \Resend::client('re_G4tRDkK9_Kjt2syMEJJJMT8zrScubiW54');
+
+    $dateFormatted = date('F j, Y \a\t g:i A', strtotime($appointmentData['appointment_at']));
+    $carName = "{$carInfo['make']} {$carInfo['model']} {$carInfo['variant']} ({$carInfo['year']})";
+
+    $html = "
+    <div style='font-family: Arial, sans-serif; max-width: 600px; margin: auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1);'>
+        <div style='background: linear-gradient(135deg, #f59e0b, #e67e22); padding: 40px 20px; text-align: center; color: white;'>
+            <h1>Appointment Request Received!</h1>
+        </div>
+        <div style='padding: 40px 30px; text-align: center;'>
+            <p style='font-size: 18px;'>Hi <strong>{$userInfo['name']}</strong>,</p>
+            <p>Salamat sa pag-book! Your appointment request has been received and is <strong style='color: #e67e22;'>PENDING APPROVAL</strong>.</p>
+            
+            <div style='background: #f8f9fa; padding: 25px; border-radius: 12px; margin: 30px 0; border-left: 6px solid #f59e0b;'>
+                <h2 style='margin-top: 0;'>Appointment Details</h2>
+                <p><strong>Car:</strong> {$carName}</p>
+                <p><strong>Date & Time:</strong> {$dateFormatted}</p>
+                " . (!empty($appointmentData['notes']) ? "<p><strong>Notes:</strong><br><em>{$appointmentData['notes']}</em></p>" : "") . "
+            </div>
+
+            <p>We will notify you once it's approved!</p>
+        </div>
+        <div style='background: #1a1a1a; color: #aaa; padding: 20px; text-align: center; font-size: 13px;'>
+            © " . date('Y') . " LavaLust Cars • Luxury Redefined
+        </div>
+    </div>";
+
     try {
-        $mail->isSMTP();
-        $mail->Host       = 'smtp.gmail.com';
-        $mail->SMTPAuth   = true;
-        $mail->Username   = 'johnrheynedamotamares2005@gmail.com';
-        $mail->Password   = 'isebrtolhpyifuhh';
-        $mail->SMTPSecure = 'tls';
-        $mail->Port       = 587;
-        $mail->setFrom('johnrheynedamotamares2005@gmail.com', 'LavaLust Cars');
-        $mail->addAddress($userInfo['email'], $userInfo['name']);
-        $mail->isHTML(true);
-
-        $mail->Subject = "Appointment Request Received – {$carInfo['make']} {$carInfo['model']}";
-
-        $dateFormatted = date('F j, Y \a\t g:i A', strtotime($appointmentData['appointment_at']));
-
-        $mail->Body = "
-        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #ddd; border-radius: 12px; overflow: hidden;'>
-            <div style='background: #e67e22; color: white; padding: 30px; text-align: center;'>
-                <h1>Appointment Request Received!</h1>
-            </div>
-            <div style='padding: 30px; background: #f8f9fa;'>
-                <p>Hi <strong>{$userInfo['name']}</strong>,</p>
-                <p>Salamat sa pag-book! Your appointment request has been received and is <strong style='color: #e67e22;'>PENDING APPROVAL</strong>.</p>
-                
-                <div style='background: white; padding: 25px; border-radius: 10px; margin: 30px 0; border-left: 6px solid #e67e22;'>
-                    <h2>Appointment Details</h2>
-                    <p><strong>Car:</strong> {$carInfo['make']} {$carInfo['model']} {$carInfo['variant']} ({$carInfo['year']})</p>
-                    <p><strong>Date & Time:</strong> {$dateFormatted}</p>
-                    " . (!empty($appointmentData['notes']) ? "<p><strong>Notes:</strong><br><em>{$appointmentData['notes']}</em></p>" : "") . "
-                </div>
-
-                <p>We will notify you once it's approved!</p>
-            </div>
-        </div>";
-
-        $mail->send();
-        error_log("Booking confirmation sent to: {$userInfo['email']}");
-    } catch (Exception $e) {
-        error_log("Booking email failed: " . $mail->ErrorInfo);
+        $resend->emails->send([
+            'from'    => 'LavaLust Cars <onboarding@resend.dev>',
+            'to'      => $userInfo['email'],
+            'subject' => "Appointment Request Received – {$carInfo['make']} {$carInfo['model']}",
+            'html'    => $html
+        ]);
+        error_log("Booking confirmation sent via Resend to: {$userInfo['email']}");
+    } catch (\Exception $e) {
+        error_log("Resend booking email failed: " . $e->getMessage());
     }
 }
 
@@ -1387,59 +1371,54 @@ public function resetPassword()
 // ===================================================================
 private function sendPasswordResetEmail($name, $email, $token)
 {
-    $mail = new PHPMailer(true);
+    
+    // Ilagay mo dito ang Resend API key mo (mas safe kung sa .env)
+    $resend = \Resend::client('re_7hRjc2KA_P8stiWxVFw6wdvkMcyrFfe9S');
+    
+    $resetLink = "https://ride-zones-front-end-liard.vercel.app/reset-password?token={$token}&email=" . urlencode($email);
+
     try {
-        $mail->isSMTP();
-        $mail->Host       = 'smtp.gmail.com';
-        $mail->SMTPAuth   = true;
-        $mail->Username   = 'johnrheynedamotamares2005@gmail.com';
-        $mail->Password   = 'isebrtolhpyifuhh';
-        $mail->SMTPSecure = 'tls';
-        $mail->Port       = 587;
-        $mail->setFrom('johnrheynedamotamares2005@gmail.com', 'RIDEZONE');
-        $mail->addAddress($email, $name);
-        $mail->isHTML(true);
-
-        $resetLink = "http://localhost:5173/reset-password?token={$token}&email=" . urlencode($email);
-
-        $mail->Subject = "RIDEZONE • Reset Your Password";
-
-        $mail->Body = "
-        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 40px auto; background: #0a0a0a; color: white; border-radius: 20px; overflow: hidden; border: 1px solid #333;'>
-            <div style='background: linear-gradient(135deg, #ef4444, #b91c1c); padding: 50px 30px; text-align: center;'>
-                <h1 style='margin:0; font-size: 36px; font-weight: bold;'>RIDEZONE</h1>
-                <p style='margin: 10px 0 0; opacity: 0.9;'>Luxury Redefined</p>
-            </div>
-            <div style='padding: 50px 40px; text-align: center;'>
-                <div style='width: 80px; height: 80px; background: #ef4444; border-radius: 50%; margin: 0 auto 30px; display: flex; align-items: center; justify-content: center;'>
-                    <i style='font-size: 40px; color: white;'>Key</i>
+        $resend->emails->send([
+            'from'    => 'RIDEZONE <onboarding@resend.dev>', // Dapat verified domain or use resend.dev for testing
+            'to'      => [$email],
+            'subject' => 'RIDEZONE • Reset Your Password',
+            'html'    => "
+            <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 40px auto; background: #0a0a0a; color: white; border-radius: 20px; overflow: hidden; border: 1px solid #333;'>
+                <div style='background: linear-gradient(135deg, #ef4444, #b91c1c); padding: 50px 30px; text-align: center;'>
+                    <h1 style='margin:0; font-size: 36px; font-weight: bold;'>RIDEZONE</h1>
+                    <p style='margin: 10px 0 0; opacity: 0.9;'>Luxury Redefined</p>
                 </div>
-                <h2 style='font-size: 28px; margin-bottom: 20px;'>Password Reset Request</h2>
-                <p style='font-size: 18px; line-height: 1.6; color: #ccc;'>
-                    Hi <strong>{$name}</strong>,<br><br>
-                    We received a request to reset your RIDEZONE password.
-                </p>
-                
-                <div style='margin: 50px 0;'>
-                    <a href='{$resetLink}' style='background: linear-gradient(135deg, #ef4444, #b91c1c); color: white; padding: 18px 50px; border-radius: 15px; text-decoration: none; font-weight: bold; font-size: 18px; display: inline-block; box-shadow: 0 10px 30px rgba(239,68,68,0.4);'>
-                        Reset Password Now
-                    </a>
+                <div style='padding: 50px 40px; text-align: center;'>
+                    <div style='width: 80px; height: 80px; background: #ef4444; border-radius: 50%; margin: 0 auto 30px; display: flex; align-items: center; justify-content: center;'>
+                        <span style='font-size: 40px;'>Key</span>
+                    </div>
+                    <h2 style='font-size: 28px; margin-bottom: 20px;'>Password Reset Request</h2>
+                    <p style='font-size: 18px; line-height: 1.6; color: #ccc;'>
+                        Hi <strong>{$name}</strong>,<br><br>
+                        We received a request to reset your RIDEZONE password.
+                    </p>
+                    
+                    <div style='margin: 50px 0;'>
+                        <a href='{$resetLink}' style='background: linear-gradient(135deg, #ef4444, #b91c1c); color: white; padding: 18px 50px; border-radius: 15px; text-decoration: none; font-weight: bold; font-size: 18px; display: inline-block; box-shadow: 0 10px 30px rgba(239,68,68,0.4);'>
+                            Reset Password Now
+                        </a>
+                    </div>
+
+                    <p style='color: #888; font-size: 14px; line-height: 1.6;'>
+                        This link will expire in <strong>60 minutes</strong>.<br>
+                        If you didn't request this, please ignore this email.
+                    </p>
                 </div>
+                <div style='background: #111; padding: 30px; text-align: center; font-size: 13px; color: #666;'>
+                    © " . date('Y') . " RIDEZONE • Philippines' Premier Luxury Car Platform
+                </div>
+            </div>",
+        ]);
 
-                <p style='color: #888; font-size: 14px; line-height: 1.6;'>
-                    This link will expire in <strong>60 minutes</strong>.<br>
-                    If you didn't request this, please ignore this email.
-                </p>
-            </div>
-            <div style='background: #111; padding: 30px; text-align: center; font-size: 13px; color: #666;'>
-                © " . date('Y') . " RIDEZONE • Philippines' Premier Luxury Car Platform
-            </div>
-        </div>";
-
-        $mail->send();
-        error_log("Password reset email sent to: {$email}");
-    } catch (Exception $e) {
-        error_log("Reset email failed: " . $mail->ErrorInfo);
+        error_log("Password reset email sent via Resend to: {$email}");
+    } catch (\Exception $e) {
+        error_log("Resend email failed: " . $e->getMessage());
+        // Optional: throw $e; kung gusto mo i-propagate ang error
     }
 }
 /**
