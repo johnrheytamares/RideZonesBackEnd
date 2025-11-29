@@ -1056,7 +1056,7 @@ public function deleteDealer($id)
 public function uploadDealerLogo()
 {
     $this->api->require_method('POST');
-    //$this->requireAdmin();
+    // $this->requireAdmin(); // i-uncomment mo pag live na
 
     if (!isset($_FILES['logo_file']) || $_FILES['logo_file']['error'] === UPLOAD_ERR_NO_FILE) {
         return $this->api->respond_error('No file uploaded', 400);
@@ -1064,38 +1064,38 @@ public function uploadDealerLogo()
 
     $file = $_FILES['logo_file'];
 
+    // Check upload error
     if ($file['error'] !== UPLOAD_ERR_OK) {
-        return $this->api->respond_error('Upload error occurred', 400);
+        return $this->api->respond_error('Upload error: ' . $file['error'], 400);
     }
 
-    $allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-    if (!in_array($file['type'], $allowed)) {
-        return $this->api->respond_error('Only JPG, PNG, WebP images are allowed', 400);
+    // Validate type
+    $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!in_array($file['type'], $allowedTypes)) {
+        return $this->api->respond_error('Only JPG, PNG, WebP allowed', 400);
     }
 
-    if ($file['size'] > 3 * 1024 * 1024) { // 3MB max
-        return $this->api->respond_error('File too large (max 3MB)', 400);
+    // Max 3MB
+    if ($file['size'] > 3 * 1024 * 1024) {
+        return $this->api->respond_error('File too large. Max 3MB.', 400);
     }
 
-    $uploadDir = __DIR__ . '/../../../public/uploads/dealers/';
-    if (!is_dir($uploadDir)) {
-        mkdir($uploadDir, 0755, true);
+    // READ FILE → CONVERT TO BASE64
+    $imageData = file_get_contents($file['tmp_name']);
+    $base64 = 'data:' . $file['type'] . ';base64,' . base64_encode($imageData);
+
+    // Optional: limit total size (base64 is ~33% bigger)
+    if (strlen($base64) > 5 * 1024 * 1024) { // ~5MB encoded
+        return $this->api->respond_error('Image too large after encoding', 400);
     }
 
-    $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-    $filename = 'dealer_' . time() . '_' . uniqid() . '.' . $ext;
-    $path = $uploadDir . $filename;
-
-    if (!move_uploaded_file($file['tmp_name'], $path)) {
-        return $this->api->respond_error('Failed to save file', 500);
-    }
-
-    $publicUrl = '/uploads/dealers/' . $filename;
-
-    $this->api->respond([
-        'status' => 'success',
-        'url' => $publicUrl,
-        'message' => 'Logo uploaded successfully'
+    // RETURN BASE64 STRING — i-save mo sa `logo` column ng dealers table
+    return $this->api->respond([
+        'status'  => 'success',
+        'url'     => $base64,
+        'path'    => $base64,
+        'size'    => round(strlen($base64) / 1024) . ' KB (base64)',
+        'message' => 'Dealer logo uploaded as base64 — works everywhere!'
     ]);
 }
 
