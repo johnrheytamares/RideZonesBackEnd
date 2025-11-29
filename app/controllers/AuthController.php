@@ -156,4 +156,106 @@ private function setUserSession($user)
         $this->session->sess_destroy();
         redirect('/');
     }
+
+    public function forgotPassword()
+{
+    $this->api->require_method('POST');
+    $input = $this->api->body();
+
+    $email = trim($input['email'] ?? '');
+    if (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        return $this->api->respond_error('Valid email is required', 400);
+    }
+
+    // Check if user exists
+    $stmt = $this->db->raw("SELECT id, name FROM users WHERE email = ?", [$email]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    // ALWAYS return same message (security best practice)
+    $responseMessage = 'If the email exists, a password reset link has been sent.';
+
+    if (!$user) {
+        return $this->api->respond(['message' => $responseMessage]);
+    }
+
+    // Delete old tokens
+    $this->db->raw("DELETE FROM password_reset_tokens WHERE email = ?", [$email]);
+
+    // Generate secure token (60 chars)
+    $token = bin2hex(random_bytes(30)); // 60 characters, super secure
+
+    // Save token (hashed for security)
+    $hashedToken = password_hash($token, PASSWORD_DEFAULT);
+
+    $this->db->raw("
+        INSERT INTO password_reset_tokens (email, token, created_at) 
+        VALUES (?, ?, NOW())
+    ", [$email, $hashedToken]);
+
+    // Send email
+    $this->AuthController->sendPasswordResetEmail($user['name'], $email, $token);
+
+    return $this->api->respond(['message' => $responseMessage]);
+}
+
+// ===================================================================
+// RESET PASSWORD — Full working version
+// ===================================================================
+public function resetPassword()
+{
+    $this->api->require_method('POST');
+    $input = $this->api->body();
+
+    $email = trim($input['email'] ?? '');
+    $token = $input['token'] ?? '';
+    $password = $input['password'] ?? '';
+    $password_confirm = $input['password_confirmation'] ?? '';
+
+    if (!$email || !$token || !$password || $password !== $password_confirm) {
+        return $this->api->respond_error('Invalid or incomplete data', 400);
+    }
+
+    if (strlen($password) < 8) {
+        return $this->api->respond_error('Password must be at least 8 characters', 400);
+    }
+
+    // Get reset token from DB
+    $stmt = $this->db->raw("
+        SELECT token, created_at FROM password_reset_tokens 
+        WHERE email = ? ORDER BY created_at DESC LIMIT 1
+    ", [$email]);
+
+    $reset = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$reset) {
+        return $this->api->respond_error('Invalid or expired reset link', 400);
+    }
+
+    // Check if token is older than 60 minutes
+    $createdAt = new DateTime($reset['created_at']);
+    $now = new DateTime();
+    $diff = $now->diff($createdAt)->i;
+
+    if ($diff > 60) {
+        $this->db->raw("DELETE FROM password_reset_tokens WHERE email = ?", [$email]);
+        return $this->api->respond_error('Reset link has expired', 400);
+    }
+
+    // Verify token
+    if (!password_verify($token, $reset['token'])) {
+        return $this->api->respond_error('Invalid token', 400);
+    }
+
+    // Update password
+    $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+    $this->db->raw("UPDATE users SET password_hash = ? WHERE email = ?", [$hashedPassword, $email]);
+
+    // Delete all tokens for this email
+    $this->db->raw("DELETE FROM password_reset_tokens WHERE email = ?", [$email]);
+
+    return $this->api->respond([
+        'status' => 'success',
+        'message' => 'Password reset successful!'
+    ]);
+}
 }
