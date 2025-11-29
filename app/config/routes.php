@@ -92,7 +92,6 @@ $router->get('/listdealers', 'ApiController@listDealers');
 $router->post('/createdealer', 'ApiController@createDealer');
 $router->put('/updatedealer/{id}', 'ApiController@updateDealer');
 $router->delete('/deletedealer/{id}', 'ApiController@deleteDealer');
-$router->post('/upload-dealer-logo', 'ApiController@uploadDealerLogo');
 // ===================================================================
 // FILES
 // ===================================================================
