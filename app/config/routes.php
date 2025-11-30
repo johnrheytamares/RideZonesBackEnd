@@ -51,12 +51,12 @@ $router->post('/reset-password', 'ApiController@resetPassword');
 // AUTH & PUBLIC ROUTES
 // ===================================================================
 $router->post('/login', 'ApiController@login');
-$router->post('/logout', 'AuthController@logout');
+$router->post('/logout', 'ApiController@logout');
 $router->post('/refresh', 'ApiController@refresh');
 $router->post('/otp', 'ApiController@sendVerificationCode');
 $router->post('/otp/verify', 'ApiController@verifyCode');
 $router->get('/email', 'ApiController@sendTestEmail'); // test only
-$router->post('/auth/google', 'AuthController@googleCallback');
+$router->post('/auth/google', 'ApiController@googleCallback');
 // ===================================================================
 // USER MANAGEMENT — CLEAN SINGULAR ROUTES (PRO LEVEL)
 // ===================================================================
