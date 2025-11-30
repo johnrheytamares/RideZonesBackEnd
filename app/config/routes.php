@@ -65,7 +65,7 @@ $router->get('/listusers', 'ApiController@list');
 $router->get('/profile', 'ApiController@profile');
 $router->put('/update/{id}', 'ApiController@update');
 $router->delete('/delete/{id}', 'ApiController@delete');
-
+$router->get('/auth/me', 'ApiController@authMe');
 // ===================================================================
 // CARS MANAGEMENT
 // ===================================================================
