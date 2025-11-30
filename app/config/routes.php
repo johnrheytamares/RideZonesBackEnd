@@ -40,23 +40,14 @@ defined('PREVENT_DIRECT_ACCESS') OR exit('No direct script access allowed');
 | -------------------------------------------------------------------
 | Here is where you can register web routes for your application.
 |
-|
 */
-
-//$router->get('/', 'Welcome::index');
-
-$router->post('/forgot-password', 'ApiController@forgotPassword');
-$router->post('/reset-password', 'ApiController@resetPassword');
 // ===================================================================
 // AUTH & PUBLIC ROUTES
 // ===================================================================
 $router->post('/login', 'ApiController@login');
-$router->post('/logout', 'AuthController@logout');
+$router->post('/logout', 'ApiController@logout');
 $router->post('/refresh', 'ApiController@refresh');
-$router->post('/otp', 'ApiController@sendVerificationCode');
-$router->post('/otp/verify', 'ApiController@verifyCode');
-$router->get('/email', 'ApiController@sendTestEmail'); // test only
-$router->post('/auth/google', 'AuthController@googleCallback');
+$router->post('/auth/google', 'ApiController@googleCallback');
 // ===================================================================
 // USER MANAGEMENT — CLEAN SINGULAR ROUTES (PRO LEVEL)
 // ===================================================================
@@ -65,7 +56,6 @@ $router->get('/listusers', 'ApiController@list');
 $router->get('/profile', 'ApiController@profile');
 $router->put('/update/{id}', 'ApiController@update');
 $router->delete('/delete/{id}', 'ApiController@delete');
-$router->get('/authsess', 'ApiController@authMe');
 // ===================================================================
 // CARS MANAGEMENT
 // ===================================================================
@@ -76,6 +66,7 @@ $router->delete('/deletecars/{id}', 'ApiController@deleteCars');
 $router->get('/searchcars', 'ApiController@listCarsPaginated');
 $router->post('/upload-car-image', 'ApiController@uploadCarImage');
 $router->get('/cardistribution', 'ApiController@cardistribution');
+$router->post('/api/compare/cars', 'ApiController@compareCars');
 // ===================================================================
 // APPOINTMENTS
 // ===================================================================
@@ -97,5 +88,6 @@ $router->delete('/deletedealer/{id}', 'ApiController@deleteDealer');
 // ===================================================================
 $router->get('/download/{filename}', 'ApiController@downloadFile');
 // ===================================================================
-// CAR COMPARISON
-$router->post('/api/compare/cars', 'ApiController@compareCars');
+// 
+$router->post('/forgot-password', 'ApiController@forgotPassword');
+$router->post('/reset-password', 'ApiController@resetPassword');

@@ -7,8 +7,6 @@ class AuthController extends Controller {
 
 public function googleCallback()
 {
-
-
     $input = json_decode(file_get_contents('php://input'), true);
     $token = $input['credential'] ?? null;
 
@@ -119,19 +117,19 @@ public function googleCallback()
     exit;
 }
 
-private function setUserSession($user)
-{
-    if (!isset($this->session))
-        $this->load->library('session');
+    private function setUserSession($user)
+    {
+        if (!isset($this->session))
+            $this->load->library('session');
 
-    $this->session->set_userdata([
-        'user_id'   => $user['id'],
-        'name'      => $user['name'],
-        'email'     => $user['email'],
-        'role'      => $user['role'],
-        'logged_in' => true
-    ]);
-}
+        $this->session->set_userdata([
+            'user_id'   => $user['id'],
+            'name'      => $user['name'],
+            'email'     => $user['email'],
+            'role'      => $user['role'],
+            'logged_in' => true
+        ]);
+    }
 
     // ================== HELPER METHODS ==================
     private function generateUniqueUsername($name, $email)
