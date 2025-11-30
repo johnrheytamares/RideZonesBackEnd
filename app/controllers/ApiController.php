@@ -1321,117 +1321,103 @@ class ApiController extends Controller {
     }
 
     public function googleCallback()
-    {
-        $input = json_decode(file_get_contents('php://input'), true);
-        $token = $input['credential'] ?? null;
+{
+    // CORS + Preflight
+    header('Access-Control-Allow-Origin: hhttp://localhost:5173');
+    header('Access-Control-Allow-Methods: POST, OPTIONS');
+    header('Access-Control-Allow-Headers: Content-Type');
+    header('Content-Type: application/json');
 
-        if (!$token) {
-            echo json_encode(['success' => false, 'error' => 'No token']);
-            exit;
-        }
+    if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+        http_response_code(200);
+        exit();
+    }
 
-        try {
-            $client = new Google\Client();
-            $client->setClientId('1090968034876-fh3nbirtjc4sgef6itbbn50pggo1j3l0.apps.googleusercontent.com');
+    $input = json_decode(file_get_contents('php://input'), true);
+    $token = $input['credential'] ?? null;
 
-            $payload = $client->verifyIdToken($token);
-
-            if (!$payload) {
-                echo json_encode(['success' => false, 'error' => 'Invalid token']);
-                exit;
-            }
-
-            $googleId = $payload['sub'];
-            $email    = $payload['email'];
-            $name     = $payload['name'] ?? 'User';
-            $picture  = $payload['picture'] ?? null;
-
-            // Check existing account
-            $query = $this->db
-                ->table('users')
-                ->where('google_id', $googleId)
-                ->or_where('email', $email)
-                ->get(); // executes the query
-
-            $user = $query[0] ?? null; // get the first row if exists
-
-            if (!$user) {
-
-                // Generate unique name
-                $uniqueName = $this->generateUniqueUsername($name, $email);
-
-                $this->db->table('users')->insert([
-                    'name'      => $uniqueName,
-                    'email'     => $email,
-                    'google_id' => $googleId,
-                    'avatar'    => $picture,
-                    'role'      => 'dealer',
-                    'email_verified_at' => date('Y-m-d H:i:s'),
-                    'created_at' => date('Y-m-d H:i:s')
-                ]);
-
-                $userId = $this->db->insert_id();
-
-                $user = [
-                    'id'        => $userId,
-                    'name'      => $uniqueName,
-                    'email'     => $email,
-                    'role'      => 'dealer',
-                    'google_id' => $googleId,
-                    'avatar'    => $picture
-                ];
-            } else {
-                if (empty($user['google_id'])) {
-                    $this->db->table('users')
-                        ->where('id', $user['id'])
-                        ->update(['google_id' => $googleId]);
-                }
-            }
-
-            // Save session
-            $this->setUserSession($user);
-
-            echo json_encode([
-                'success' => true,
-                'user' => [
-                    'id'     => $user['id'],
-                    'name'   => $user['name'],
-                    'email'  => $user['email'],
-                    'role'   => $user['role'],
-                    'avatar' => $user['avatar'] ?? null
-                ]
-            ]);
-
-        } catch (Exception $e) {
-        error_log('Google Login Error: ' . $e->getMessage());
-
-            if ($this->DEV_MODE) {
-
-                // BYPASS USER
-                $fakeUser = [
-                    'id' => 23,
-                    'name' => 'admin',
-                    'email' => 'johnrheynedamotamares2005@gmail.com',
-                    'role' => 'admin',
-                    'dealer_id' => 1,
-                    'avatar' => null
-                ];
-
-                $this->setUserSession($fakeUser);
-
-                echo json_encode([
-                    'success' => true,
-                    'user' => $fakeUser,
-                    'dev_mode' => true
-                ]);
-                exit;
-            }
-
-            echo json_encode(['success' => false, 'error' => 'Authentication failed']);
-        }
+    if (!$token) {
+        echo json_encode(['success' => false, 'error' => 'No token provided']);
         exit;
     }
 
+    try {
+        $client = new Google\Client();
+        // PALITAN MO ‘TO NG BAGONG CLIENT ID MO!!!
+        $client->setClientId('1090968034876-fh3nbirtjc4sgef6itbbn50pggo1j3l0.apps.googleusercontent.com');
+
+        $payload = $client->verifyIdToken($token);
+
+        if (!$payload) {
+            echo json_encode(['success' => false, 'error' => 'Invalid Google token']);
+            exit;
+        }
+
+        $googleId = $payload['sub'];
+        $email    = $payload['email'];
+        $name     = $payload['name'] ?? 'User';
+        $picture  = $payload['picture'] ?? null;
+
+        // Check existing user
+        $query = $this->db->table('users')
+            ->where('google_id', $googleId)
+            ->or_where('email', $email)
+            ->get();
+
+        $user = $query->row_array(); // mas clean
+
+        if (!$user) {
+            // Create new user
+            $uniqueName = $this->generateUniqueUsername($name, $email);
+
+            $this->db->table('users')->insert([
+                'name'               => $uniqueName,
+                'email'              => $email,
+                'google_id'          => $googleId,
+                'avatar'             => $picture,
+                'role'               => 'dealer',  // or 'buyer' kung gusto mo
+                'email_verified_at'  => date('Y-m-d H:i:s'),
+                'created_at'         => date('Y-m-d H:i:s')
+            ]);
+
+            $userId = $this->db->insert_id();
+
+            $user = [
+                'id'        => $userId,
+                'name'      => $uniqueName,
+                'email'     => $email,
+                'role'      => 'dealer',
+                'google_id' => $googleId,
+                'avatar'    => $picture
+            ];
+        } else {
+            // Link Google ID if not yet linked
+            if (empty($user['google_id'])) {
+                $this->db->table('users')
+                    ->where('id', $user['id'])
+                    ->update(['google_id' => $googleId]);
+            }
+        }
+
+        $this->setUserSession($user);
+
+        echo json_encode([
+            'success' => true,
+            'user' => [
+                'id'     => $user['id'],
+                'name'   => $user['name'],
+                'email'  => $user['email'],
+                'role'   => $user['role'],
+                'avatar' => $user['avatar']
+            ]
+        ]);
+
+    } catch (Exception $e) {
+        error_log('Google Login Error: ' . $e->getMessage());
+        echo json_encode(['success' => false, 'error' => 'Authentication failed']);
+    }
+    exit;
+}
     private function setUserSession($user)
     {
         if (!isset($this->session))

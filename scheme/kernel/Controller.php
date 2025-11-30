@@ -101,11 +101,12 @@ class Controller
 
 			if (isset($_SERVER['HTTP_ORIGIN']) && in_array($_SERVER['HTTP_ORIGIN'], $allowed_origins)) {
 				header("Access-Control-Allow-Origin: " . $_SERVER['HTTP_ORIGIN']);
+				header('Vary: Origin');
 			}
 
 			header('Access-Control-Allow-Credentials: true');
 			header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-			header('Access-Control-Allow-Headers: Content-Type, Authorization, X-User, X-Requested-With');
+			header('Access-Control-Allow-Headers: Content-Type, Authorization, X-User, X-Requested-With, X-CSRF-Token');
 			header('Access-Control-Max-Age: 86400'); // Cache preflight 24 hours
 			header('Content-Type: application/json');
 
