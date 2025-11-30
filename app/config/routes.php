@@ -51,12 +51,12 @@ $router->post('/reset-password', 'ApiController@resetPassword');
 // AUTH & PUBLIC ROUTES
 // ===================================================================
 $router->post('/login', 'ApiController@login');
-$router->post('/logout', 'ApiController@logout');
+$router->post('/logout', 'AuthController@logout');
 $router->post('/refresh', 'ApiController@refresh');
 $router->post('/otp', 'ApiController@sendVerificationCode');
 $router->post('/otp/verify', 'ApiController@verifyCode');
 $router->get('/email', 'ApiController@sendTestEmail'); // test only
-$router->post('/auth/google', 'ApiController@googleCallback');
+$router->post('/auth/google', 'AuthController@googleCallback');
 // ===================================================================
 // USER MANAGEMENT — CLEAN SINGULAR ROUTES (PRO LEVEL)
 // ===================================================================
@@ -99,4 +99,3 @@ $router->get('/download/{filename}', 'ApiController@downloadFile');
 // ===================================================================
 // CAR COMPARISON
 $router->post('/api/compare/cars', 'ApiController@compareCars');
-$router->get('/auth/me', 'ApiController@me');
