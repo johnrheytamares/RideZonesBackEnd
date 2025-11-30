@@ -1353,56 +1353,7 @@ private function sendPasswordResetEmail($name, $email, $token)
     }
 }
 
-// ===================================================================
-// AUTH/ME — CURRENT LOGGED-IN USER (PERFECT & BULLETPROOF)
-// ===================================================================
-    public function authMe()
-    {
-        // Important: Allow credentials (cookies)
-        header('Access-Control-Allow-Credentials: true');
-        header('Access-Control-Allow-Origin: https://ride-zones-front-end-liard.vercel.app'); // o yung domain mo
-        header('Content-Type: application/json');
 
-        // Gamit ang X-User header mo (kasi ginagamit mo siya sa getCurrentUser())
-        $user = $this->getCurrentUser();
-
-        // Kung may user sa header → trusted na (dahil ginagamit mo na siya sa ibang functions)
-        if ($user['id'] !== null) {
-            return $this->api->respond([
-                'success' => true,
-                'user'    => [
-                    'id'        => (int)$user['id'],
-                    'name'      => $user['name'] ?? 'User',
-                    'email'     => $user['email'] ?? null,
-                    'role'      => $user['role'],
-                    'dealer_id' => $user['dealer_id'],
-                    'phone'     => $user['phone'] ?? null
-                ]
-            ]);
-        }
-
-        // FALLBACK: Kung walang X-User header, pero may session (kung may PHP session ka)
-        // Optional lang ‘to — pero safe pa rin
-        session_start();
-        if (isset($_SESSION['user_id'])) {
-            return $this->api->respond([
-                'success' => true,
-                'user'    => [
-                    'id'        => (int)$_SESSION['user_id'],
-                    'name'      => $_SESSION['user_name'] ?? 'User',
-                    'email'     => $_SESSION['user_email'] ?? null,
-                    'role'      => $_SESSION['user_role'] ?? 'buyer',
-                    'dealer_id' => $_SESSION['dealer_id'] ?? null
-                ]
-            ]);
-        }
-
-        // Kung wala talaga → not logged in
-        return $this->api->respond([
-            'success' => false,
-            'message' => 'Not authenticated'
-        ]);
-    }
 /**
  * Helper: Require Admin Role
  */

@@ -93,6 +93,7 @@ class Controller
 
 		    // ====== Global CORS Handling ======
 			header("Access-Control-Allow-Origin: https://ride-zones-front-end-liard.vercel.app");
+			header('Access-Control-Allow-Origin: http://localhost:5173');
 			header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 			header("Access-Control-Allow-Headers: Content-Type, Authorization");
 

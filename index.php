@@ -7,6 +7,7 @@ while (ob_get_level()) ob_end_clean();
 
 // CORS headers – DAPAT UNA ITO bago mag-output ng kahit anong JSON
 header('Access-Control-Allow-Origin: https://ride-zones-front-end-liard.vercel.app');
+header('Access-Control-Allow-Origin: http://localhost:5173');
 header('Access-Control-Allow-Credentials: true');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization, X-User, X-Requested-With');
