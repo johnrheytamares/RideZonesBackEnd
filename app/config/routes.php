@@ -99,3 +99,4 @@ $router->get('/download/{filename}', 'ApiController@downloadFile');
 // ===================================================================
 // CAR COMPARISON
 $router->post('/api/compare/cars', 'ApiController@compareCars');
+$router->get('/auth/me', 'ApiController@me');

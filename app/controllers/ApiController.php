@@ -7,7 +7,7 @@ class ApiController extends Controller {
     private $user = null;
 
 
-    public function __construct($api, $db) {
+    public function __construct() {
        session_start();
 
        $publicRoutes = [
@@ -1544,6 +1544,27 @@ class ApiController extends Controller {
         if (($_SESSION['user_role'] ?? 'buyer') !== 'admin') {
             $this->api->respond_error('Admin access required', 403);
             exit;
+        }
+    }
+
+    // controllers/AuthController.php
+
+    public function me()
+    {
+        // Kung may session (naka-login)
+        if (!empty($_SESSION['user_id'])) {
+            $this->api->respond([
+                'success' => true,
+                'user' => [
+                    'id'        => $_SESSION['user_id'],
+                    'name'      => $_SESSION['user_name'] ?? 'User',
+                    'email'     => $_SESSION['user_email'],
+                    'role'      => $_SESSION['user_role'],
+                    'dealer_id' => $_SESSION['dealer_id'] ?? null
+                ]
+            ]);
+        } else {
+            $this->api->respond_error('Unauthorized', 401);
         }
     }
 }
