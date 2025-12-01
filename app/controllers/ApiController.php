@@ -1351,7 +1351,7 @@ class ApiController extends Controller {
         // Check existing user
         $user = $this->db->table('users')
             ->where('google_id', $googleId)
-            ->orWhere('email', $email)
+            ->or_where('email', $email)
             ->limit(1)
             ->get()
             ->getRowArray();
@@ -1364,9 +1364,8 @@ class ApiController extends Controller {
                 'name'               => $uniqueName,
                 'email'              => $email,
                 'google_id'          => $googleId,
-                'avatar'             => $picture,
-                'role'               => 'dealer',  // or 'buyer' kung gusto mo
-                'email_verified_at'  => date('Y-m-d H:i:s'),
+                'profile_picture'             => $picture,
+                'role'               => 'buyer',  // or 'buyer' kung gusto mo
                 'created_at'         => date('Y-m-d H:i:s')
             ]);
 
@@ -1378,7 +1377,7 @@ class ApiController extends Controller {
                 'email'     => $email,
                 'role'      => 'dealer',
                 'google_id' => $googleId,
-                'avatar'    => $picture
+                'profile_picture'    => $picture
             ];
         } else {
             // Link Google ID if not yet linked
@@ -1398,7 +1397,7 @@ class ApiController extends Controller {
                 'name'   => $user['name'],
                 'email'  => $user['email'],
                 'role'   => $user['role'],
-                'avatar' => $user['avatar']
+                'profile_picture' => $user['avatar']
             ]
         ]);
 
