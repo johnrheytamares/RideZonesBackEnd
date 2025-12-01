@@ -1333,7 +1333,7 @@ class ApiController extends Controller {
 
     try {
         $client = new Google\Client();
-        // PALITAN MO ‘TO NG BAGONG CLIENT ID MO!!!
+    
         $client->setClientId('1090968034876-fh3nbirtjc4sgef6itbbn50pggo1j3l0.apps.googleusercontent.com');
 
         $payload = $client->verifyIdToken($token);
@@ -1352,7 +1352,6 @@ class ApiController extends Controller {
         $user = $this->db->query("
             SELECT * FROM users 
             WHERE google_id = ? OR email = ? 
-            LIMIT 1
         ", [$googleId, $email])->row_array();
 
         if (!$user) {
@@ -1363,7 +1362,7 @@ class ApiController extends Controller {
                 'name'               => $uniqueName,
                 'email'              => $email,
                 'google_id'          => $googleId,
-                'profile_picture'             => $picture,
+                'profile_picture'    => $picture,
                 'role'               => 'buyer',  // or 'buyer' kung gusto mo
                 'created_at'         => date('Y-m-d H:i:s')
             ]);
