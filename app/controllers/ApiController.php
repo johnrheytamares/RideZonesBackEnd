@@ -62,7 +62,7 @@ class ApiController extends Controller {
         }
 
         // Verify reCAPTCHA
-        $secretKey = '6Leevh0sAAAAAN86P752-2BvVBy-TajAgQ92UO6q'; // Store securely, e.g., in env/config
+        $secretKey = '6Lfi7h0sAAAAAMVeGWxv78jZwbpj22NBT5nrb7ot'; // Store securely, e.g., in env/config
         $verifyUrl = 'https://www.google.com/recaptcha/api/siteverify';
         $data = [
             'secret' => $secretKey,
