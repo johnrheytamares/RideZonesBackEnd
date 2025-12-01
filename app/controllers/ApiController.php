@@ -1349,12 +1349,12 @@ class ApiController extends Controller {
         $picture  = $payload['picture'] ?? null;
 
         // Check existing user
-        $query = $this->db->table('users')
+        $user = $this->db->table('users')
             ->where('google_id', $googleId)
-            ->or_where('email', $email)
-            ->get();
-
-        $user = $query->row_array(); // mas clean
+            ->orWhere('email', $email)
+            ->limit(1)
+            ->get()
+            ->getRowArray();
 
         if (!$user) {
             // Create new user
