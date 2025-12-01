@@ -847,7 +847,7 @@ class ApiController extends Controller {
         // Optional button for completed
         if ($status === 'completed') {
             $html .= "<p>We'd love to see you again!</p>
-                    <a href='https://ride-zones-front-end-liard.vercel.app/cars' style='background:{$c['color']};color:white;padding:16px 36px;text-decoration:none;border-radius:10px;font-weight:bold;font-size:16px;'>
+                    <a href='https://ride-zones-front-end-liard.vercel.app/cars-page' style='background:{$c['color']};color:white;padding:16px 36px;text-decoration:none;border-radius:10px;font-weight:bold;font-size:16px;'>
                         Browse More Luxury Cars
                     </a>";
         }
@@ -855,7 +855,7 @@ class ApiController extends Controller {
         // Optional button for cancelled/rejected
         if (in_array($status, ['cancelled', 'rejected'])) {
             $html .= "<p>You can book another slot anytime.</p>
-                    <a href='https://ride-zones-front-end-liard.vercel.app/cars' style='background:{$c['color']};color:white;padding:16px 36px;text-decoration:none;border-radius:10px;font-weight:bold;font-size:16px;'>
+                    <a href='https://ride-zones-front-end-liard.vercel.app/cars-page' style='background:{$c['color']};color:white;padding:16px 36px;text-decoration:none;border-radius:10px;font-weight:bold;font-size:16px;'>
                         Book Another Appointment
                     </a>";
         }
@@ -1243,9 +1243,9 @@ class ApiController extends Controller {
         ]);
     }
 
-// ===================================================================
+// =================================================================== 
 // SEND PASSWORD RESET EMAIL (LUXURY DESIGN)
-// ===================================================================
+// =================================================================== 
     private function sendPasswordResetEmail($name, $email, $token)
     {
         
