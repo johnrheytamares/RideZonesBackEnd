@@ -871,7 +871,7 @@ class ApiController extends Controller {
 
         try {
             $resend->emails->send([
-                'from'    => 'RIDEZONE <onboarding@resend.dev>',
+                'from'    => 'RIDEZONE <noreply@resend.dev>',
                 'to'      => $userInfo['email'],
                 'subject' => $c['subject'],
                 'html'    => $html
@@ -915,7 +915,7 @@ class ApiController extends Controller {
 
         try {
             $resend->emails->send([
-                'from'    => 'LavaLust Cars <onboarding@resend.dev>',
+                'from'    => 'LavaLust Cars <noreply@resend.dev>',
                 'to'      => $userInfo['email'],
                 'subject' => "Appointment Request Received – {$carInfo['make']} {$carInfo['model']}",
                 'html'    => $html
@@ -1255,7 +1255,7 @@ class ApiController extends Controller {
 
         try {
             $resend->emails->send([
-                'from'    => 'RIDEZONE <onboarding@resend.dev>', // Dapat verified domain or use resend.dev for testing
+                'from'    => 'RIDEZONE <noreply@resend.dev>', // Dapat verified domain or use resend.dev for testing
                 'to'      => [$email],
                 'subject' => 'RIDEZONE • Reset Your Password',
                 'html'    => "
