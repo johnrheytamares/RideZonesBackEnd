@@ -52,6 +52,61 @@ class ApiController extends Controller {
         $this->api->respond($stmt);
     }
 
+    public function register() {
+        $input = $this->api->body();
+
+        // Extract reCAPTCHA token
+        $token = $input['g-recaptcha-response'] ?? '';
+        if (empty($token)) {
+            return $this->api->respond(['error' => 'reCAPTCHA token missing'], 400);
+        }
+
+        // Verify reCAPTCHA
+        $secretKey = '6Lfi7h0sAAAAAMVeGWxv78jZwbpj22NBT5nrb7ot'; // Store securely, e.g., in env/config
+        $verifyUrl = 'https://www.google.com/recaptcha/api/siteverify';
+        $data = [
+            'secret' => $secretKey,
+            'response' => $token,
+            'remoteip' => $_SERVER['REMOTE_ADDR'] // Optional for better accuracy
+        ];
+
+        // Use file_get_contents (or cURL if preferred)
+        $options = [
+            'http' => [
+                'header' => "Content-type: application/x-www-form-urlencoded\r\n",
+                'method' => 'POST',
+                'content' => http_build_query($data)
+            ]
+        ];
+        $context = stream_context_create($options);
+        $result = file_get_contents($verifyUrl, false, $context);
+        $response = json_decode($result, true);
+
+        if (!$response['success']) {
+            return $this->api->respond(['error' => 'reCAPTCHA verification failed: ' . implode(', ', $response['error-codes'] ?? [])], 403);
+        }
+
+        // If valid, proceed with defaults and insertion
+        $role = $input['role'] ?? 'buyer';
+        $phone = $input['phone'] ?? '0927488292';
+        $dealer_id = $input['dealer_id'] ?? 1;
+
+        $this->db->raw(
+            "INSERT INTO users (role, name, email, password_hash, phone, dealer_id, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, NOW())",
+            [
+                $role,
+                $input['name'],
+                $input['email'],
+                password_hash($input['password'], PASSWORD_BCRYPT),
+                $phone,
+                $dealer_id
+            ]
+        );
+
+        $this->api->respond(['message' => 'User created']);
+    }
+
     public function create() {
         $input = $this->api->body();
 
