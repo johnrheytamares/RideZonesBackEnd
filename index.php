@@ -2,7 +2,26 @@
 define('PREVENT_DIRECT_ACCESS', TRUE);
 
 // CORS headers (keep at top)
-// Limpiin muna ang output buffer para walang maunang output
+while (ob_get_level()) ob_end_clean();
+
+// Isa lang ang allowed – ang Vercel frontend mo
+header('Access-Control-Allow-Origin: https://ride-zones-front-end-liard.vercel.app');
+header('Access-Control-Allow-Credentials: true');           // Required for PHP session cookie
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, PATCH, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-CSRF-Token, Accept');
+header('Access-Control-Max-Age: 86400');
+header('Vary: Origin');
+
+// Handle preflight (OPTIONS) – kailangan talaga ito
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(204);
+    exit();
+}
+
+// JSON response para sa API
+header('Content-Type: application/json; charset=utf-8');
+// =====================================================================
+
 
 // === DEFINE ROOT_DIR AGAD — DAPAT PINAKAUNA ===
 define('ROOT_DIR', __DIR__ . DIRECTORY_SEPARATOR);
