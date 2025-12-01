@@ -92,26 +92,24 @@ class Controller
 	{
 
 	// ====== ULTIMATE CORS FIX — GUMAGANA SA LAHAT NG SITWASYON (Dec 2025) ======
-	// ====== PINAKA-SIMPLE AT GUMAGANA TALAGA (SESSION + COOKIE) – 2025 ======
-	while (ob_get_level()) ob_end_clean();
+		while (ob_get_level()) ob_end_clean();
 
-	// Isa lang ang allowed – ang Vercel frontend mo
-	header('Access-Control-Allow-Origin: https://ride-zones-front-end-liard.vercel.app');
-	header('Access-Control-Allow-Credentials: true');           // Required for PHP session cookie
-	header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, PATCH, OPTIONS');
-	header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-CSRF-Token, Accept');
-	header('Access-Control-Max-Age: 86400');
-	header('Vary: Origin');
+		// Fix #1: Allow ang Vercel frontend mo
+		header('Access-Control-Allow-Origin: https://ride-zones-front-end-liard.vercel.app');
+		header('Access-Control-Allow-Credentials: true');
+		header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, PATCH, OPTIONS');
 
-	// Handle preflight (OPTIONS) – kailangan talaga ito
-	if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-		http_response_code(204);
-		exit();
-	}
+		// Fix #2: Idagdag ang lahat ng custom headers mo (lalo na x-user!)
+		header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-CSRF-Token, Accept, X-User, x-user');
 
-	// JSON response para sa API
-	header('Content-Type: application/json; charset=utf-8');
-// =====================================================================
+		// Fix #3: Para sa preflight
+		if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+			http_response_code(204);
+			exit();
+		}
+
+		header('Vary: Origin');
+		header('Content-Type: application/json; charset=utf-8');
 	// ======================================================================
 
 		$this->before_action();
