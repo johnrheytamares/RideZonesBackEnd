@@ -91,31 +91,42 @@ class Controller
 	public function __construct()
 	{
 
-		    // ====== Global CORS Handling ======
-			while (ob_get_level()) ob_end_clean();
+	// ====== ULTIMATE CORS FIX — GUMAGANA SA LAHAT NG SITWASYON (Dec 2025) ======
+	while (ob_get_level()) ob_end_clean();
 
-			$allowed_origins = [
-				'https://ride-zones-front-end-liard.vercel.app',
-				'http://localhost:5173'
-			];
+	$allowed_origins = [
+		'https://ride-zones-front-end-liard.vercel.app',
+		'https://ride-zones-front-end-liard.vercel.app/',  // with trailing slash (minsan ginagamit)
+		'http://localhost:5173',
+		'http://127.0.0.1:5173',
+		'http://localhost:3000'
+	];
 
-			if (isset($_SERVER['HTTP_ORIGIN']) && in_array($_SERVER['HTTP_ORIGIN'], $allowed_origins)) {
-				header("Access-Control-Allow-Origin: " . $_SERVER['HTTP_ORIGIN']);
-				header('Vary: Origin');
-			}
+	$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
 
-			header('Access-Control-Allow-Credentials: true');
-			header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-			header('Access-Control-Allow-Headers: Content-Type, Authorization, X-User, X-Requested-With, X-CSRF-Token');
-			header('Access-Control-Max-Age: 86400'); // Cache preflight 24 hours
-			header('Content-Type: application/json');
+	// Always send these headers
+	header('Access-Control-Allow-Credentials: true');
+	header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+	header('Access-Control-Allow-Headers: Content-Type, Authorization, X-User, X-Requested-With, X-CSRF-Token, Accept');
+	header('Access-Control-Max-Age: 86400');
+	header('Vary: Origin');
+	header('Content-Type: application/json; charset=utf-8');
 
-			// Handle preflight request
-			if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-				http_response_code(200);
-				exit;
-			}
-			// ================================
+	// Handle preflight
+	if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+		http_response_code(200);
+		exit();
+	}
+
+	// MAIN FIX: Kung may valid origin → gamitin
+	// Kung wala → gamitin yung production URL (safe fallback)
+	if ($origin && in_array($origin, $allowed_origins)) {
+		header("Access-Control-Allow-Origin: $origin");
+	} else {
+		// Default fallback — pinaka-importante ‘to!
+		header("Access-Control-Allow-Origin: https://ride-zones-front-end-liard.vercel.app");
+	}
+	// ======================================================================
 
 		$this->before_action();
 
