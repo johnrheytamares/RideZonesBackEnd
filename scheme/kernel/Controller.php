@@ -91,26 +91,31 @@ class Controller
 	public function __construct()
 	{
 
-	// ====== ULTIMATE CORS FIX — GUMAGANA SA LAHAT NG SITWASYON (Dec 2025) ======
-		while (ob_get_level()) ob_end_clean();
+		    // ====== Global CORS Handling ======
+			while (ob_get_level()) ob_end_clean();
 
-		// Fix #1: Allow ang Vercel frontend mo
-		header('Access-Control-Allow-Origin: https://ride-zones-front-end-liard.vercel.app');
-		header('Access-Control-Allow-Credentials: true');
-		header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, PATCH, OPTIONS');
+			$allowed_origins = [
+				'https://ride-zones-front-end-liard.vercel.app',
+				'http://localhost:5173'
+			];
 
-		// Fix #2: Idagdag ang lahat ng custom headers mo (lalo na x-user!)
-		header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-CSRF-Token, Accept, X-User, x-user');
+			if (isset($_SERVER['HTTP_ORIGIN']) && in_array($_SERVER['HTTP_ORIGIN'], $allowed_origins)) {
+				header("Access-Control-Allow-Origin: " . $_SERVER['HTTP_ORIGIN']);
+				header('Vary: Origin');
+			}
 
-		// Fix #3: Para sa preflight
-		if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-			http_response_code(204);
-			exit();
-		}
+			header('Access-Control-Allow-Credentials: true');
+			header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+			header('Access-Control-Allow-Headers: Content-Type, Authorization, X-User, X-Requested-With, X-CSRF-Token');
+			header('Access-Control-Max-Age: 86400'); // Cache preflight 24 hours
+			header('Content-Type: application/json');
 
-		header('Vary: Origin');
-		header('Content-Type: application/json; charset=utf-8');
-	// ======================================================================
+			// Handle preflight request
+			if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+				http_response_code(200);
+				exit;
+			}
+			// ================================
 
 		$this->before_action();
 
