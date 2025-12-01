@@ -94,16 +94,7 @@ class Controller
 		    // ====== Global CORS Handling ======
 			while (ob_get_level()) ob_end_clean();
 
-			$allowed_origins = [
-				'https://ride-zones-front-end-liard.vercel.app',
-				'http://localhost:5173'
-			];
-
-			if (isset($_SERVER['HTTP_ORIGIN']) && in_array($_SERVER['HTTP_ORIGIN'], $allowed_origins)) {
-				header("Access-Control-Allow-Origin: " . $_SERVER['HTTP_ORIGIN']);
-				header('Vary: Origin');
-			}
-
+			header("Access-Control-Allow-Origin: https://ride-zones-front-end-liard.vercel.app" );
 			header('Access-Control-Allow-Credentials: true');
 			header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 			header('Access-Control-Allow-Headers: Content-Type, Authorization, X-User, X-Requested-With, X-CSRF-Token');
