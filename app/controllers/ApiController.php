@@ -659,6 +659,7 @@ class ApiController extends Controller {
         $sql = "
             SELECT 
                 a.id,
+                a.dealer_id,
                 a.full_name AS user_name,
                 a.full_name,
                 a.email,
@@ -676,7 +677,7 @@ class ApiController extends Controller {
         ";
 
         $params = [];
-        if ($user['role'] === 'dealer' && $user['dealer_id']) {
+        if ($user['role'] === 'dealer' && !empty($user['dealer_id'])) {
             $sql .= " WHERE a.dealer_id = ?";
             $params[] = $user['dealer_id'];
         }
