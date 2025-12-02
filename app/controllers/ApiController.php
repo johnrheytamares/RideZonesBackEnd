@@ -16,22 +16,59 @@ class ApiController extends Controller {
     public function login() {
         $this->api->require_method('POST');
         $input = $this->api->body();
-        $email = $input['email'] ?? '';
+
+        // Extract reCAPTCHA token (matching the frontend's 'token' field)
+        $token = $input['token'] ?? '';
+        if (empty($token)) {
+            return $this->api->respond_error('reCAPTCHA token missing', 400);
+        }
+
+        // Verify reCAPTCHA
+        $secretKey = '6Lfi7h0sAAAAAMVeGWxv78jZwbpj22NBT5nrb7ot'; // Store securely, e.g., in env/config
+        $verifyUrl = 'https://www.google.com/recaptcha/api/siteverify';
+        $data = [
+            'secret' => $secretKey,
+            'response' => $token,
+            'remoteip' => $_SERVER['REMOTE_ADDR'] // Optional for accuracy
+        ];
+
+        // Use file_get_contents for verification (or cURL if preferred)
+        $options = [
+            'http' => [
+                'header' => "Content-type: application/x-www-form-urlencoded\r\n",
+                'method' => 'POST',
+                'content' => http_build_query($data)
+            ]
+        ];
+        $context = stream_context_create($options);
+        $result = file_get_contents($verifyUrl, false, $context);
+        $response = json_decode($result, true);
+
+        if (!$response['success']) {
+            return $this->api->respond_error('reCAPTCHA verification failed: ' . implode(', ', $response['error-codes'] ?? []), 403);
+        }
+
+        // If reCAPTCHA passes, proceed with login
+        $email = trim($input['email'] ?? '');
         $password = $input['password'] ?? '';
+
+        if (empty($email) || empty($password)) {
+            return $this->api->respond_error('Email and password are required', 400);
+        }
 
         $stmt = $this->db->raw('SELECT * FROM users WHERE email = ?', [$email]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($user && password_verify($password, $user['password_hash'])) {
             $this->api->respond([
-                    'status' => 'success',
-                    'user' => [
-                        'id'        => $user['id'],
-                        'name'      => $user['name'],
-                        'email'     => $user['email'],
-                        'role'      => $user['role'],
-                        'dealer_id' => $user['dealer_id'] ?? null
-                    ]
+                'status' => 'success',
+                'user' => [
+                    'id'        => $user['id'],
+                    'name'      => $user['name'],
+                    'email'     => $user['email'],
+                    'role'      => $user['role'],
+                    'dealer_id' => $user['dealer_id'] ?? null
+                ]
             ]);
         } else {
             $this->api->respond_error('Invalid credentials', 401);
