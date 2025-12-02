@@ -22,7 +22,8 @@ class GoogleFormController extends Controller {
         $client = new Google_Client();
         $client->setApplicationName("RideZones Dashboard");
         $client->setScopes([Google_Service_Sheets::SPREADSHEETS_READONLY]);
-        $client->setAuthConfig(__DIR__ . '/../../crack-audio-480009-k7-b5f20f881669.json');
+        $path = realpath(__DIR__ . '/../../crack-audio-480009-k7-b5f20f881669.json');
+        $client->setAuthConfig($path);
 
         $service = new Google_Service_Sheets($client);
 
