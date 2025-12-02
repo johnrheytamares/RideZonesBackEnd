@@ -1489,22 +1489,34 @@ class ApiController extends Controller {
     }
 
 
-    function sendBookingEmail($toEmail, $toName, $appointment_at, $car_name, $notes = '')
+    public function sendBookingEmail($toEmail = null, $toName = null, $appointment_at = null, $car_name = null, $notes = '')
     {
-        $apiKey = getenv('Fbwl2BQGs6htXwza');  // yung Fbwl2BQGs6htXwza mo
+        // Para manual testing via /sendmail
+        if (!$toEmail) {
+            $input = $this->api->body();
+            $toEmail        = $input['email'] ?? 'your-personal-email@gmail.com'; // ← palitan mo ng email mo
+            $toName         = $input['name']  ?? 'Test User';
+            $appointment_at = $input['date']  ?? date('Y-m-d H:i:s');
+            $car_name       = $input['car']   ?? 'Toyota Supra';
+            $notes          = $input['notes'] ?? '';
+        }
+
+        // ← HARDCODED NA LAHAT (safe pa rin kasi ikaw lang may access)
+        $apiKey = 'Fbwl2BQGs6htXwza';  // ← yung exact key mo
 
         $payload = [
-            "sender"      => ["name" => "RideZones", "email" => "johnrheynedamotamares2005@gmail.com"],
-            "to"          => [["email" => $toEmail, "name" => $toName]],
-            "subject"     => "✅ Drive Test Booking Confirmed!",
+            "sender" => ["name" => "RideZones", "email" => "johnrheynedamotamares2005@gmail.com"],
+            "to"     => [["email" => $toEmail, "name" => $toName]],
+            "subject" => "Drive Test Booking Confirmed!",
             "htmlContent" => "
                 <h2>Hi $toName!</h2>
-                <p>Your drive test is <strong>confirmed</strong>!</p>
+                <p>Your drive test booking is <strong>confirmed</strong>!</p>
                 <ul>
-                    <li>📅 <strong>Date & Time:</strong> " . date('F j, Y \a\t g:i A', strtotime($appointment_at)) . "</li>
-                    <li>🚗 <strong>Car:</strong> $car_name</li>
-                    <li>📝 <strong>Notes:</strong> " . ($notes ?: 'None') . "</li>
+                    <li>Date & Time: <strong>" . date('F j, Y \a\t g:i A', strtotime($appointment_at)) . "</strong></li>
+                    <li>Car: <strong>$car_name</strong></li>
+                    <li>Notes: " . ($notes ?: 'None') . "</li>
                 </ul>
+                <br>
                 <p>See you soon!<br><strong>RideZones Team</strong></p>
             "
         ];
@@ -1521,11 +1533,13 @@ class ApiController extends Controller {
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
 
         $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
 
-        // Optional: log if failed
-        if ($response === false) {
-            error_log("Brevo email failed");
+        if ($httpCode == 201) {
+            return $this->api->respond(['status' => 'success', 'message' => 'Email sent! Check your inbox!']);
+        } else {
+            return $this->api->respond_error("Failed → HTTP $httpCode | $response", 500);
         }
     }
 }
