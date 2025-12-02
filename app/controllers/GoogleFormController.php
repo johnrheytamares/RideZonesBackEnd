@@ -18,52 +18,80 @@ class GoogleFormController extends Controller {
 
     public function getResponses()
     {
+        header('Content-Type: application/json'); // Ensure JSON response
 
-        $client = new Google_Client();
-        $client->setApplicationName("RideZones Dashboard");
-        $client->setScopes([Google_Service_Sheets::SPREADSHEETS_READONLY]);
-        $path = realpath(__DIR__ . '/../../crack-audio-480009-k7-b5f20f881669.json');
-        if (!$path || !file_exists($path)) {
+        try {
+            // Resolve service account JSON path
+            $path = realpath(__DIR__ . '/../../crack-audio-480009-k7-b5f20f881669.json');
+            if (!$path || !file_exists($path)) {
+                echo json_encode([
+                    'success' => false,
+                    'error' => 'Service account JSON file not found at ' . (__DIR__ . '/../../crack-audio-480009-k7-b5f20f881669.json')
+                ]);
+                return;
+            }
+
+            // Initialize Google Client
+            $client = new Google_Client();
+            $client->setApplicationName("RideZones Dashboard");
+            $client->setScopes([Google_Service_Sheets::SPREADSHEETS_READONLY]);
+            
+            // Load service account config
+            $jsonContent = file_get_contents($path);
+            $config = json_decode($jsonContent, true);
+
+            if (!$config) {
+                echo json_encode([
+                    'success' => false,
+                    'error' => 'Failed to parse service account JSON file. Check if it is valid.'
+                ]);
+                return;
+            }
+
+            $client->setAuthConfig($config);
+
+            // Initialize Sheets service
+            $service = new Google_Service_Sheets($client);
+
+            // Spreadsheet ID and range
+            $spreadsheetId = "1tYHdRF57htp3EskNYdkzUHN_M_2sCTuUoxMc-VWkl-I";
+            $range = "Form Responses 1!A:Z";
+
+            // Fetch values
+            $response = $service->spreadsheets_values->get($spreadsheetId, $range);
+            $values = $response->getValues();
+
+            if (empty($values)) {
+                echo json_encode([
+                    "success" => true,
+                    "data" => []
+                ]);
+                return;
+            }
+
+            // Convert rows to associative array using header row
+            $headers = array_shift($values);
+            $data = [];
+
+            foreach ($values as $row) {
+                $row = array_pad($row, count($headers), null);
+                $data[] = array_combine($headers, $row);
+            }
+
+            echo json_encode([
+                "success" => true,
+                "data" => $data
+            ]);
+            return;
+
+        } catch (\Exception $e) {
+            // Catch any exceptions and return JSON
             echo json_encode([
                 'success' => false,
-                'error' => 'Service account JSON file not found at ' . (__DIR__ . '/../../crack-audio-480009-k7-b5f20f881669.json')
+                'error' => 'Exception: ' . $e->getMessage()
             ]);
-            exit;
+            return;
         }
-
-        $client->setAuthConfig($path);
-
-        $service = new Google_Service_Sheets($client);
-
-        // ID of the Google Sheet linked to your Google Form
-        $spreadsheetId = "1tYHdRF57htp3EskNYdkzUHN_M_2sCTuUoxMc-VWkl-I";
-
-        // Name of the sheet (usually "Form Responses 1")
-        $range = "Form Responses 1!A:Z";
-
-        $response = $service->spreadsheets_values->get($spreadsheetId, $range);
-        $values = $response->getValues();
-
-        if (empty($values)) {
-            return json_encode([
-                "success" => true,
-                "data" => []
-            ]);
-        }
-
-        // Convert rows to associative format
-        $headers = array_shift($values);  // first row = header row
-        $data = [];
-
-        foreach ($values as $row) {
-            // Fill missing columns with null
-            $row = array_pad($row, count($headers), null);
-            $data[] = array_combine($headers, $row);
-        }
-
-        echo json_encode([
-            "success" => true,
-            "data" => $data
-        ]);
     }
+
 }
