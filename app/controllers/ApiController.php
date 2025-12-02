@@ -1487,6 +1487,47 @@ class ApiController extends Controller {
         }
         return $name;
     }
+
+
+    function sendBookingEmail($toEmail, $toName, $appointment_at, $car_name, $notes = '')
+    {
+        $apiKey = getenv('Fbwl2BQGs6htXwza');  // yung Fbwl2BQGs6htXwza mo
+
+        $payload = [
+            "sender"      => ["name" => "RideZones", "email" => "johnrheynedamotamares2005@gmail.com"],
+            "to"          => [["email" => $toEmail, "name" => $toName]],
+            "subject"     => "✅ Drive Test Booking Confirmed!",
+            "htmlContent" => "
+                <h2>Hi $toName!</h2>
+                <p>Your drive test is <strong>confirmed</strong>!</p>
+                <ul>
+                    <li>📅 <strong>Date & Time:</strong> " . date('F j, Y \a\t g:i A', strtotime($appointment_at)) . "</li>
+                    <li>🚗 <strong>Car:</strong> $car_name</li>
+                    <li>📝 <strong>Notes:</strong> " . ($notes ?: 'None') . "</li>
+                </ul>
+                <p>See you soon!<br><strong>RideZones Team</strong></p>
+            "
+        ];
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, "https://api.brevo.com/v3/smtp/email");
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            "accept: application/json",
+            "api-key: $apiKey",
+            "content-type: application/json"
+        ]);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+
+        $response = curl_exec($ch);
+        curl_close($ch);
+
+        // Optional: log if failed
+        if ($response === false) {
+            error_log("Brevo email failed");
+        }
+    }
 }
 
 //=====================================================================================================================================

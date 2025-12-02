@@ -49,6 +49,7 @@ $router->post('/logout', 'ApiController@logout');
 $router->post('/refresh', 'ApiController@refresh');
 $router->post('/auth/google', 'ApiController@googleCallback');
 $router->post('/register', 'ApiController@register');
+$router->post('/sendmail', 'Apicontroller@sendBookingEmail');
 // ===================================================================
 // USER MANAGEMENT — CLEAN SINGULAR ROUTES (PRO LEVEL)
 // ===================================================================
