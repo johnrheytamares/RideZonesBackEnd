@@ -290,6 +290,26 @@ class ApiController extends Controller {
             $input['service_history'] ?? null
         ]);
 
+        $carId = $this->db->lastInsertId();
+
+        // === NEW: Save additional images if any ===
+        if (!empty($input['additional_images']) && is_array($input['additional_images'])) {
+            $sortOrder = 0;
+            foreach ($input['additional_images'] as $img) {
+                $url = $img['url'] ?? '';
+                $isPrimary = !empty($img['is_primary']) ? 1 : 0;
+
+                if ($url) {
+                    $this->db->raw("INSERT INTO car_images (car_id, image_url, is_primary, sort_order) VALUES (?, ?, ?, ?)", [
+                        $carId,
+                        $url,
+                        $isPrimary,
+                        $sortOrder++
+                    ]);
+                }
+            }
+        }
+
         $this->api->respond([
             'status' => 'success',
             'message' => 'Car added successfully with warranty info!'
@@ -301,26 +321,66 @@ class ApiController extends Controller {
     public function listCars() {
         $user = $this->getCurrentUser();
 
-        $sql = "SELECT 
-                    id, dealer_id, make, model, variant, year, type, price, mileage,
-                    fuel_type, transmission, color, main_image, description, status,
-                    warranty_period, warranty_start_date, warranty_end_date, service_history
-                FROM cars";
+        // Increase limit once per request (safe for safety)
+        $this->db->raw("SET SESSION group_concat_max_len = 10485760");
+
+        $sql = "
+            SELECT
+                c.id, c.dealer_id, c.make, c.model, c.variant, c.year, c.type, c.price, c.mileage,
+                c.fuel_type, c.transmission, c.color, c.main_image, c.description, c.status,
+                c.warranty_period, c.warranty_start_date, c.warranty_end_date, c.service_history,
+
+                COALESCE(
+                    (SELECT image_url FROM car_images WHERE car_id = c.id AND is_primary = 1 LIMIT 1),
+                    c.main_image
+                ) AS display_image,
+
+                GROUP_CONCAT(
+                    CONCAT(
+                        '{\"id\":', ci.id,
+                        ',\"image_url\":\"', REPLACE(ci.image_url, '\"', '\\\"'), '\"',
+                        ',\"is_primary\":', ci.is_primary,
+                        ',\"sort_order\":', IFNULL(ci.sort_order, 0),
+                        '}'
+                    )
+                    ORDER BY ci.sort_order ASC, ci.id ASC
+                    SEPARATOR '||'
+                ) AS images_raw
+
+            FROM cars c
+            LEFT JOIN car_images ci ON ci.car_id = c.id
+        ";
 
         if ($user['role'] === 'dealer' && !empty($user['dealer_id'])) {
-            $sql .= " WHERE dealer_id = " . (int)$user['dealer_id'];
+            $sql .= " WHERE c.dealer_id = " . (int)$user['dealer_id'];
         }
 
-        $sql .= " ORDER BY id DESC";
+        $sql .= " GROUP BY c.id ORDER BY c.id DESC";
 
         $cars = $this->db->raw($sql)->fetchAll(PDO::FETCH_ASSOC);
 
+        // Process images_raw → real images array
+        foreach ($cars as &$car) {
+            $images = [];
+            if (!empty($car['images_raw'])) {
+                foreach (explode('||', $car['images_raw']) as $jsonStr) {
+                    $img = json_decode($jsonStr, true);
+                    if ($img && isset($img['image_url'])) {
+                        $images[] = $img;
+                    }
+                }
+            }
+            $car['images'] = $images;
+            $car['main_image'] = $car['display_image'] ?? $car['main_image'] ?? null;
+            unset($car['display_image'], $car['images_raw']);
+        }
+        unset($car);
+
         $this->api->respond([
             'status' => 'success',
-            'cars' => $cars
+            'cars'   => $cars
         ]);
     }
-
 
     // UPDATE CAR — WITH WARRANTY RECALCULATION
     public function updateCars($id) {
@@ -336,7 +396,6 @@ class ApiController extends Controller {
         }
 
         // Recalculate warranty_end_date if needed
-        $warranty_end_date = null;
         $warranty_period = $input['warranty_period'] ?? null;
         $warranty_start_date = $input['warranty_start_date'] ?? null;
 
@@ -377,6 +436,28 @@ class ApiController extends Controller {
             $id
         ]);
 
+        // === NEW: Handle additional images on update ===
+        if (!empty($input['additional_images']) && is_array($input['additional_images'])) {
+            // Optional: Delete old images first (kung gusto mo palitan lahat)
+            $this->db->raw("DELETE FROM car_images WHERE car_id = ?", [$id]);
+
+            // Insert new ones
+            $sortOrder = 0;
+            foreach ($input['additional_images'] as $img) {
+                $url = $img['url'] ?? '';
+                $isPrimary = !empty($img['is_primary']) ? 1 : 0;
+
+                if ($url) {
+                    $this->db->raw("INSERT INTO car_images (car_id, image_url, is_primary, sort_order) VALUES (?, ?, ?, ?)", [
+                        $id,
+                        $url,
+                        $isPrimary,
+                        $sortOrder++
+                    ]);
+                }
+            }
+        }
+
         $this->api->respond([
             'status' => 'success',
             'message' => 'Car updated successfully!'
@@ -384,10 +465,12 @@ class ApiController extends Controller {
     }
 
     public function listCarsPaginated() {
-        // === Get Current User (safe) ===
         $user = $this->getCurrentUser() ?? ['role' => 'guest', 'dealer_id' => null];
 
-        // === Pagination (safe defaults) ===
+        // Safe na safe kahit 100+ images per car
+        $this->db->raw("SET SESSION group_concat_max_len = 10485760");
+
+        // Pagination
         $page   = max(1, (int)($_GET['page'] ?? 1));
         $limit  = max(1, min(50, (int)($_GET['limit'] ?? 9)));
         $offset = ($page - 1) * $limit;
@@ -395,89 +478,115 @@ class ApiController extends Controller {
         $where  = [];
         $params = [];
 
-        // === Global Search ===
+        // Global Search
         if (!empty($_GET['search'])) {
             $s = "%" . trim($_GET['search']) . "%";
-            $where[] = "(make LIKE ? OR model LIKE ? OR variant LIKE ? OR description LIKE ? OR color LIKE ?)";
+            $where[] = "(c.make LIKE ? OR c.model LIKE ? OR c.variant LIKE ? OR c.description LIKE ? OR c.color LIKE ?)";
             $params = array_merge($params, [$s, $s, $s, $s, $s]);
         }
 
-        // === Filters ===
+        // Filters
         if (!empty($_GET['make'])) {
-            $where[] = "make = ?";
+            $where[] = "c.make = ?";
             $params[] = $_GET['make'];
         }
-
         if (!empty($_GET['year'])) {
-            $where[] = "year = ?";
+            $where[] = "c.year = ?";
             $params[] = (int)$_GET['year'];
         }
-
-        // === Price Range ===
         if (isset($_GET['min_price']) && is_numeric($_GET['min_price']) && $_GET['min_price'] > 0) {
-            $where[] = "price >= ?";
+            $where[] = "c.price >= ?";
             $params[] = (int)$_GET['min_price'];
         }
-
         if (isset($_GET['max_price']) && is_numeric($_GET['max_price']) && $_GET['max_price'] > 0) {
-            $where[] = "price <= ?";
+            $where[] = "c.price <= ?";
             $params[] = (int)$_GET['max_price'];
         }
-
-        // === Transmission ===
         if (!empty($_GET['transmission'])) {
-            $where[] = "transmission = ?";
+            $where[] = "c.transmission = ?";
             $params[] = $_GET['transmission'];
         }
-
-        // === Fuel Type (multiple support) ===
         if (!empty($_GET['fuel_type'])) {
             $fuelTypes = array_filter(explode(',', $_GET['fuel_type']));
             if (!empty($fuelTypes)) {
                 $placeholders = str_repeat('?,', count($fuelTypes) - 1) . '?';
-                $where[] = "fuel_type IN ($placeholders)";
+                $where[] = "c.fuel_type IN ($placeholders)";
                 $params = array_merge($params, $fuelTypes);
             }
         }
 
-        // === Dealer Restriction (only see own cars) ===
+        // Dealer restriction
         if ($user['role'] === 'dealer' && !empty($user['dealer_id'])) {
-            $where[] = "dealer_id = ?";
+            $where[] = "c.dealer_id = ?";
             $params[] = (int)$user['dealer_id'];
         }
 
-        // === Build WHERE clause ===
         $whereSql = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
 
-        // === Count Total Cars (for pagination) ===
-        $countParams = $params;
-        $totalQuery = "SELECT COUNT(*) FROM cars $whereSql";
-        $total = (int)$this->db->raw($totalQuery, $countParams)->fetchColumn();
+        // Total count
+        $total = (int)$this->db->raw("SELECT COUNT(*) FROM cars c $whereSql", $params)->fetchColumn();
 
-        // === Main Query — MAY WARRANTY & SERVICE NA! ===
-        $mainParams = $params;
-        $mainParams[] = $limit;
-        $mainParams[] = $offset;
+        // Main query with images
+        $sql = "
+            SELECT
+                c.id, c.dealer_id, c.make, c.model, c.variant, c.year, c.type, c.price, c.mileage,
+                c.fuel_type, c.transmission, c.color, c.main_image, c.description, c.status,
+                c.warranty_period, c.warranty_start_date, c.warranty_end_date, c.service_history,
 
-        $sql = "SELECT 
-                    id, dealer_id, make, model, variant, year, type, price, mileage,
-                    fuel_type, transmission, color, main_image, description, status,
-                    warranty_period, warranty_start_date, warranty_end_date, service_history
-                FROM cars 
-                $whereSql 
-                ORDER BY id DESC 
-                LIMIT ? OFFSET ?";
+                COALESCE(
+                    (SELECT image_url FROM car_images WHERE car_id = c.id AND is_primary = 1 LIMIT 1),
+                    c.main_image
+                ) AS display_image,
 
-        $cars = $this->db->raw($sql, $mainParams)->fetchAll(PDO::FETCH_ASSOC);
+                GROUP_CONCAT(
+                    CONCAT(
+                        '{\"id\":', ci.id,
+                        ',\"image_url\":\"', REPLACE(ci.image_url, '\"', '\\\"'), '\"',
+                        ',\"is_primary\":', ci.is_primary,
+                        ',\"sort_order\":', IFNULL(ci.sort_order, 0),
+                        '}'
+                    )
+                    ORDER BY ci.sort_order ASC, ci.id ASC
+                    SEPARATOR '||'
+                ) AS images_raw
 
-        // === Final Response ===
+            FROM cars c
+            LEFT JOIN car_images ci ON ci.car_id = c.id
+            $whereSql
+            GROUP BY c.id
+            ORDER BY c.id DESC
+            LIMIT ? OFFSET ?
+        ";
+
+        $params[] = $limit;
+        $params[] = $offset;
+
+        $cars = $this->db->raw($sql, $params)->fetchAll(PDO::FETCH_ASSOC);
+
+        // Convert images_raw → real array
+        foreach ($cars as &$car) {
+            $images = [];
+            if (!empty($car['images_raw'])) {
+                foreach (explode('||', $car['images_raw']) as $jsonStr) {
+                    $img = json_decode($jsonStr, true);
+                    if ($img && isset($img['image_url'])) {
+                        $images[] = $img;
+                    }
+                }
+            }
+            $car['images'] = $images;
+            $car['main_image'] = $car['display_image'] ?? $car['main_image'] ?? null;
+            unset($car['display_image'], $car['images_raw']);
+        }
+        unset($car);
+
         $this->api->respond([
             'status' => 'success',
             'cars' => $cars,
             'pagination' => [
-                'page' => $page,
-                'limit' => $limit,
-                'total' => $total,
+                'page'        => $page,
+                'limit'       => $limit,
+                'total'       => $total,
                 'total_pages' => (int)ceil($total / $limit)
             ]
         ]);
@@ -492,18 +601,19 @@ class ApiController extends Controller {
             if (!$car || $car['dealer_id'] != $user['dealer_id']) {
                 return $this->api->respond_error('Access denied', 403);
             }
-
-            // Optional: Delete image from storage
-            if ($car['main_image'] && file_exists($_SERVER['DOCUMENT_ROOT'] . $car['main_image'])) {
-                unlink($_SERVER['DOCUMENT_ROOT'] . $car['main_image']);
-            }
         }
+
+        // === NEW: Delete all images from car_images table first ===
+        $this->db->raw("DELETE FROM car_images WHERE car_id = ?", [$id]);
+
+        // Optional: delete main_image file if stored on disk (hindi na kailangan kung base64 ka)
+        // ...
 
         $this->db->table('cars')->where('id', $id)->delete();
 
         $this->api->respond([
             'status' => 'success',
-            'message' => 'Car deleted successfully'
+            'message' => 'Car and all images deleted successfully'
         ]);
     }
 
@@ -583,45 +693,71 @@ class ApiController extends Controller {
     {
         $this->api->require_method('POST');
 
-        // Check if file was uploaded
-        if (!isset($_FILES['main_image_file']) || $_FILES['main_image_file']['error'] === UPLOAD_ERR_NO_FILE) {
-            return $this->api->respond_error('No file uploaded', 400);
+        // === Support both old (main_image_file) and new (additional_image) field names ===
+        $fileKey = null;
+        if (isset($_FILES['additional_image']) && $_FILES['additional_image']['error'] !== UPLOAD_ERR_NO_FILE) {
+            $fileKey = 'additional_image';
+        } elseif (isset($_FILES['main_image_file']) && $_FILES['main_image_file']['error'] !== UPLOAD_ERR_NO_FILE) {
+            $fileKey = 'main_image_file';
         }
 
-        $file = $_FILES['main_image_file'];
+        // No file uploaded
+        if (!$fileKey) {
+            return $this->api->respond_error('No image file received.', 400);
+        }
 
-        // Validate upload error
+        $file = $_FILES[$fileKey];
+
+        // === Upload error handling ===
         if ($file['error'] !== UPLOAD_ERR_OK) {
-            return $this->api->respond_error('File upload error: ' . $file['error'], 400);
+            $errors = [
+                UPLOAD_ERR_INI_SIZE   => 'File exceeds upload_max_filesize.',
+                UPLOAD_ERR_FORM_SIZE  => 'File exceeds MAX_FILE_SIZE directive.',
+                UPLOAD_ERR_PARTIAL    => 'File was only partially uploaded.',
+                UPLOAD_ERR_NO_TMP_DIR => 'Missing temporary folder.',
+                UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk.',
+                UPLOAD_ERR_EXTENSION  => 'File upload stopped by extension.',
+            ];
+            $msg = $errors[$file['error']] ?? 'Unknown upload error.';
+            return $this->api->respond_error($msg, 400);
         }
 
-        // Validate file type
+        // === File type validation ===
         $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-        if (!in_array($file['type'], $allowedTypes)) {
-            return $this->api->respond_error('Only JPG, PNG, WebP allowed.', 400);
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $detectedType = finfo_file($finfo, $file['tmp_name']);
+        finfo_close($finfo);
+
+        if (!in_array($detectedType, $allowedTypes)) {
+            return $this->api->respond_error('Invalid file type. Only JPG, PNG, and WebP are allowed.', 400);
         }
 
-        // Validate file size (max 3MB para safe)
+        // === File size limit: 3MB (pwede mo baguhin) ===
         if ($file['size'] > 3 * 1024 * 1024) {
-            return $this->api->respond_error('File too large. Max 3MB allowed.', 400);
+            return $this->api->respond_error('File too large. Maximum 3MB allowed.', 400);
         }
 
-        // Convert to base64
+        // === Read file and convert to base64 (safe for DB storage) ===
         $imageData = file_get_contents($file['tmp_name']);
-        $base64 = 'data:' . $file['type'] . ';base64,' . base64_encode($imageData);
+        if ($imageData === false) {
+            return $this->api->respond_error('Failed to read uploaded file.', 500);
+        }
 
-        // Optional: limit size para hindi masyado malaki sa DB (3MB raw = ~4MB base64)
-        if (strlen($base64) > 5 * 1024 * 1024) { // ~5MB encoded
+        $base64 = 'data:' . $detectedType . ';base64,' . base64_encode($imageData);
+
+        // Optional: Extra safety — limit total base64 size (~4MB max)
+        if (strlen($base64) > 5 * 1024 * 1024) {
             return $this->api->respond_error('Image too large after encoding.', 400);
         }
 
-        // Return base64 string — i-save mo 'to sa `main_image` column ng cars table
+        // === SUCCESS RESPONSE ===
         return $this->api->respond([
-            'status' => 'success',
-            'url'    => $base64,
-            'path'   => $base64,
-            'size'   => strlen($base64) . ' bytes (base64)',
-            'tip'    => 'This is a base64 image — no file saved, works everywhere!'
+            'status'  => 'success',
+            'message' => 'Image uploaded successfully!',
+            'url'     => $base64,
+            'type'    => $detectedType,
+            'size'    => $file['size'],
+            'field'   => $fileKey  // optional: para malaman ng frontend kung alin ginamit
         ]);
     }
 
