@@ -21,7 +21,6 @@ runtime/*
 # User uploads (wag i-commit)
 public/uploads/*
 !/public/uploads/.gitkeep        # optional: para di mawala yung folder
-crack-audio-480009-k7-b5f20f881669.json
 
 # IDE & OS
 .DS_Store
