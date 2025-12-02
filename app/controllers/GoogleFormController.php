@@ -22,7 +22,7 @@ class GoogleFormController extends Controller {
 
         try {
             // Resolve service account JSON path
-            $path = '/var/www/html/crack-audio-480009-k7-b5f20f881669.json';
+            $path = getenv('GOOGLE_SA_JSON');
             if (!$path || !file_exists($path)) {
                 echo json_encode([
                     'success' => false,
