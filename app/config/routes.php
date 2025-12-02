@@ -93,3 +93,5 @@ $router->get('/download/{filename}', 'ApiController@downloadFile');
 // 
 $router->post('/forgot-password', 'ApiController@forgotPassword');
 $router->post('/reset-password', 'ApiController@resetPassword');
+
+$router->get('/api/google-form', 'GoogleFormController@getResponses');
