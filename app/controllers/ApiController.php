@@ -6,7 +6,11 @@ require_once __DIR__ . '/../../vendor/autoload.php';
 class ApiController extends Controller {
     private $user_id;
 
-
+    public function __construct()
+    {
+        parent::__construct();
+        $this->call->helper('SendBrevoMail');
+    }
 //=====================================================================================================================================
 //====================================================================================================================================
 
@@ -878,44 +882,17 @@ class ApiController extends Controller {
 
     private function sendAppointmentStatusEmail($appointmentData, $carInfo, $userInfo, $newStatus)
     {
-        $resend = \Resend::client('re_7hRjc2KA_P8stiWxVFw6wdvkMcyrFfe9S'); // o yung bagong key mo
-
         $dateFormatted = date('F j, Y \a\t g:i A', strtotime($appointmentData['appointment_at']));
-        $carName = trim("{$carInfo['make']} {$carInfo['model']} {$carInfo['variant']} ({$carInfo['year']})");
+        $carName       = trim("{$carInfo['make']} {$carInfo['model']} {$carInfo['variant']} ({$carInfo['year']})");
 
         $status = strtolower($newStatus);
         $config = [
-            'approved' => [
-                'title'   => 'Appointment APPROVED!',
-                'message' => 'Your appointment has been <strong style="color:#27ae60;font-size:20px">APPROVED</strong>!',
-                'color'   => '#27ae60',
-                'gradient' => 'linear-gradient(135deg, #27ae60, #1e8449)',
-                'subject' => "Appointment APPROVED! {$carInfo['make']} {$carInfo['model']}"
-            ],
-            'completed' => [
-                'title'   => 'Thank You for Visiting!',
-                'message' => 'Your appointment has been marked as <strong style="color:#3498db">COMPLETED</strong>.',
-                'color'   => '#3498db',
-                'gradient' => 'linear-gradient(135deg, #3498db, #2980b9)',
-                'subject' => 'Thank You! Appointment Completed'
-            ],
-            'cancelled' => [
-                'title'   => 'Appointment Cancelled',
-                'message' => 'We’re sorry, but your appointment has been <strong style="color:#e74c3c">CANCELLED</strong>.',
-                'color'   => '#e74c3c',
-                'gradient' => 'linear-gradient(135deg, #e74c3c, #c0392b)',
-                'subject' => 'Appointment Cancelled'
-            ],
-            'rejected' => [
-                'title'   => 'Appointment Rejected',
-                'message' => 'We’re sorry, but your appointment has been <strong style="color:#e74c3c">REJECTED</strong>.',
-                'color'   => '#e74c3c',
-                'gradient' => 'linear-gradient(135deg, #e74c3c, #c0392b)',
-                'subject' => 'Appointment Rejected'
-            ]
+            'approved'   => ['title'=> 'Appointment APPROVED!',      'color'=>'#27ae60', 'gradient'=>'linear-gradient(135deg, #27ae60, #1e8449)', 'subject'=>"Appointment APPROVED! {$carInfo['make']} {$carInfo['model']}", 'msg'=>'APPROVED'],
+            'completed'  => ['title'=> 'Thank You for Visiting!',    'color'=>'#3498db', 'gradient'=>'linear-gradient(135deg, #3498db, #2980b9)', 'subject'=>'Thank You! Appointment Completed', 'msg'=>'COMPLETED'],
+            'cancelled'  => ['title'=> 'Appointment Cancelled',      'color'=>'#e74c3c', 'gradient'=>'linear-gradient(135deg, #e74c3c, #c0392b)', 'subject'=>'Appointment Cancelled', 'msg'=>'CANCELLED'],
+            'rejected'   => ['title'=> 'Appointment Rejected',       'color'=>'#e74c3c', 'gradient'=>'linear-gradient(135deg, #e74c3c, #c0392b)', 'subject'=>'Appointment Rejected', 'msg'=>'REJECTED'],
         ];
 
-        // Kung hindi kasama sa list (ex: pending), wag mag-send
         if (!isset($config[$status])) return;
 
         $c = $config[$status];
@@ -927,7 +904,7 @@ class ApiController extends Controller {
             </div>
             <div style='padding: 40px 30px; text-align: center;'>
                 <p style='font-size: 18px;'>Hi <strong>{$userInfo['name']}</strong>,</p>
-                <p style='font-size: 17px; line-height: 1.6;'>{$c['message']}</p>
+                <p style='font-size: 17px; line-height: 1.6;'>Your appointment has been <strong style='color:{$c['color']}'>{$c['msg']}</strong>!</p>
                 
                 <div style='background: #f8f9fa; padding: 30px; border-radius: 12px; margin: 35px 0; border-left: 7px solid {$c['color']};'>
                     <h2 style='margin-top:0; color: #2c3e50;'>Appointment Details</h2>
@@ -936,19 +913,11 @@ class ApiController extends Controller {
                     . (!empty($appointmentData['notes']) ? "<p style='margin:15px 0 0;'><strong>Your Notes:</strong><br><em>{$appointmentData['notes']}</em></p>" : "")
                 . "</div>";
 
-        // Optional button for completed
-        if ($status === 'completed') {
-            $html .= "<p>We'd love to see you again!</p>
+        if ($status === 'completed' || $status === 'cancelled' || $status === 'rejected') {
+            $btnText = ($status === 'completed') ? 'Browse More Luxury Cars' : 'Book Another Appointment';
+            $html .= "<p style='margin:40px 0 20px;'>{$btnText}</p>
                     <a href='https://ride-zones-front-end-liard.vercel.app/cars-page' style='background:{$c['color']};color:white;padding:16px 36px;text-decoration:none;border-radius:10px;font-weight:bold;font-size:16px;'>
-                        Browse More Luxury Cars
-                    </a>";
-        }
-
-        // Optional button for cancelled/rejected
-        if (in_array($status, ['cancelled', 'rejected'])) {
-            $html .= "<p>You can book another slot anytime.</p>
-                    <a href='https://ride-zones-front-end-liard.vercel.app/cars-page' style='background:{$c['color']};color:white;padding:16px 36px;text-decoration:none;border-radius:10px;font-weight:bold;font-size:16px;'>
-                        Book Another Appointment
+                        {$btnText}
                     </a>";
         }
 
@@ -962,26 +931,13 @@ class ApiController extends Controller {
             </div>
         </div>";
 
-        try {
-            $resend->emails->send([
-                'from'    => 'RIDEZONE <noreply@resend.dev>',
-                'to'      => $userInfo['email'],
-                'subject' => $c['subject'],
-                'html'    => $html
-            ]);
-            error_log("Appointment {$newStatus} email sent via Resend to: {$userInfo['email']}");
-        } catch (\Exception $e) {
-            error_log("Resend appointment {$newStatus} email failed: " . $e->getMessage());
-        }
+        sendBrevoEmail($userInfo['email'], $userInfo['name'], $c['subject'], $html);
     }
 
-// 1. PARA SA BOOKING LANG (Pending)
     private function sendBookingConfirmationEmail($appointmentData, $carInfo, $userInfo)
     {
-        $resend = \Resend::client('re_7hRjc2KA_P8stiWxVFw6wdvkMcyrFfe9S');
-
         $dateFormatted = date('F j, Y \a\t g:i A', strtotime($appointmentData['appointment_at']));
-        $carName = "{$carInfo['make']} {$carInfo['model']} {$carInfo['variant']} ({$carInfo['year']})";
+        $carName       = "{$carInfo['make']} {$carInfo['model']} {$carInfo['variant']} ({$carInfo['year']})";
 
         $html = "
         <div style='font-family: Arial, sans-serif; max-width: 600px; margin: auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1);'>
@@ -995,28 +951,17 @@ class ApiController extends Controller {
                 <div style='background: #f8f9fa; padding: 25px; border-radius: 12px; margin: 30px 0; border-left: 6px solid #f59e0b;'>
                     <h2 style='margin-top: 0;'>Appointment Details</h2>
                     <p><strong>Car:</strong> {$carName}</p>
-                    <p><strong>Date & Time:</strong> {$dateFormatted}</p>
-                    " . (!empty($appointmentData['notes']) ? "<p><strong>Notes:</strong><br><em>{$appointmentData['notes']}</em></p>" : "") . "
-                </div>
-
+                    <p><strong>Date & Time:</strong> {$dateFormatted}</p>"
+                    . (!empty($appointmentData['notes']) ? "<p><strong>Notes:</strong><br><em>{$appointmentData['notes']}</em></p>" : "") .
+                "</div>
                 <p>We will notify you once it's approved!</p>
             </div>
             <div style='background: #1a1a1a; color: #aaa; padding: 20px; text-align: center; font-size: 13px;'>
-                © " . date('Y') . " LavaLust Cars • Luxury Redefined
+                © " . date('Y') . " RIDEZONE • Philippines' Premier Luxury Car Platform
             </div>
         </div>";
 
-        try {
-            $resend->emails->send([
-                'from'    => 'LavaLust Cars <noreply@resend.dev>',
-                'to'      => $userInfo['email'],
-                'subject' => "Appointment Request Received – {$carInfo['make']} {$carInfo['model']}",
-                'html'    => $html
-            ]);
-            error_log("Booking confirmation sent via Resend to: {$userInfo['email']}");
-        } catch (\Exception $e) {
-            error_log("Resend booking email failed: " . $e->getMessage());
-        }
+        sendBrevoEmail($userInfo['email'], $userInfo['name'], "Appointment Request Received – {$carInfo['make']} {$carInfo['model']}", $html);
     }
 
     public function dataappointments() {
@@ -1340,55 +1285,39 @@ class ApiController extends Controller {
 // =================================================================== 
     private function sendPasswordResetEmail($name, $email, $token)
     {
-        
-        // Ilagay mo dito ang Resend API key mo (mas safe kung sa .env)
-        $resend = \Resend::client('re_7hRjc2KA_P8stiWxVFw6wdvkMcyrFfe9S');
-        
         $resetLink = "https://ride-zones-front-end-liard.vercel.app/reset-password?token={$token}&email=" . urlencode($email);
 
-        try {
-            $resend->emails->send([
-                'from'    => 'RIDEZONE <noreply@resend.dev>', // Dapat verified domain or use resend.dev for testing
-                'to'      => [$email],
-                'subject' => 'RIDEZONE • Reset Your Password',
-                'html'    => "
-                <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 40px auto; background: #0a0a0a; color: white; border-radius: 20px; overflow: hidden; border: 1px solid #333;'>
-                    <div style='background: linear-gradient(135deg, #ef4444, #b91c1c); padding: 50px 30px; text-align: center;'>
-                        <h1 style='margin:0; font-size: 36px; font-weight: bold;'>RIDEZONE</h1>
-                        <p style='margin: 10px 0 0; opacity: 0.9;'>Luxury Redefined</p>
-                    </div>
-                    <div style='padding: 50px 40px; text-align: center;'>
-                        <div style='width: 80px; height: 80px; background: #ef4444; border-radius: 50%; margin: 0 auto 30px; display: flex; align-items: center; justify-content: center;'>
-                            <span style='font-size: 40px;'>Key</span>
-                        </div>
-                        <h2 style='font-size: 28px; margin-bottom: 20px;'>Password Reset Request</h2>
-                        <p style='font-size: 18px; line-height: 1.6; color: #ccc;'>
-                            Hi <strong>{$name}</strong>,<br><br>
-                            We received a request to reset your RIDEZONE password.
-                        </p>
-                        
-                        <div style='margin: 50px 0;'>
-                            <a href='{$resetLink}' style='background: linear-gradient(135deg, #ef4444, #b91c1c); color: white; padding: 18px 50px; border-radius: 15px; text-decoration: none; font-weight: bold; font-size: 18px; display: inline-block; box-shadow: 0 10px 30px rgba(239,68,68,0.4);'>
-                                Reset Password Now
-                            </a>
-                        </div>
+        $html = "
+        <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 40px auto; background: #0a0a0a; color: white; border-radius: 20px; overflow: hidden; border: 1px solid #333;'>
+            <div style='background: linear-gradient(135deg, #ef4444, #b91c1c); padding: 50px 30px; text-align: center;'>
+                <h1 style='margin:0; font-size: 36px; font-weight: bold;'>RIDEZONE</h1>
+                <p style='margin: 10px 0 0; opacity: 0.9;'>Luxury Redefined</p>
+            </div>
+            <div style='padding: 50px 40px; text-align: center;'>
+                <div style='width: 80px; height: 80px; background: #ef4444; border-radius: 50%; margin: 0 auto 30px; display: flex; align-items: center; justify-content: center;'>
+                    <span style='font-size: 40px;'>Key</span>
+                </div>
+                <h2 style='font-size: 28px; margin-bottom: 20px;'>Password Reset Request</h2>
+                <p style='font-size: 18px; line-height: 1.6; color: #ccc;'>
+                    Hi <strong>{$name}</strong>,<br><br>
+                    We received a request to reset your RIDEZONE password.
+                </p>
+                <div style='margin: 50px 0;'>
+                    <a href='{$resetLink}' style='background: linear-gradient(135deg, #ef4444, #b91c1c); color: white; padding: 18px 50px; border-radius: 15px; text-decoration: none; font-weight: bold; font-size: 18px; display: inline-block; box-shadow: 0 10px 30px rgba(239,68,68,0.4);'>
+                        Reset Password Now
+                    </a>
+                </div>
+                <p style='color: #888; font-size: 14px; line-height: 1.6;'>
+                    This link will expire in <strong>60 minutes</strong>.<br>
+                    If you didn't request this, please ignore this email.
+                </p>
+            </div>
+            <div style='background: #111; padding: 30px; text-align: center; font-size: 13px; color: #666;'>
+                © " . date('Y') . " RIDEZONE • Philippines' Premier Luxury Car Platform
+            </div>
+        </div>";
 
-                        <p style='color: #888; font-size: 14px; line-height: 1.6;'>
-                            This link will expire in <strong>60 minutes</strong>.<br>
-                            If you didn't request this, please ignore this email.
-                        </p>
-                    </div>
-                    <div style='background: #111; padding: 30px; text-align: center; font-size: 13px; color: #666;'>
-                        © " . date('Y') . " RIDEZONE • Philippines' Premier Luxury Car Platform
-                    </div>
-                </div>",
-            ]);
-
-            error_log("Password reset email sent via Resend to: {$email}");
-        } catch (\Exception $e) {
-            error_log("Resend email failed: " . $e->getMessage());
-            // Optional: throw $e; kung gusto mo i-propagate ang error
-        }
+        sendBrevoEmail($email, $name, 'RIDEZONE • Reset Your Password', $html);
     }
 
     // ===================================================================
@@ -1524,6 +1453,65 @@ class ApiController extends Controller {
         }
         return $name;
     }
+
+
+public function sendBookingEmail($toEmail = null, $toName = null, $appointment_at = null, $car_name = null, $notes = '')
+{
+    // Para manual testing via /sendmail
+    if (!$toEmail) {
+        $input = $this->api->body();
+        $toEmail        = $input['email'] ?? 'your-personal-email@gmail.com';
+        $toName         = $input['name']  ?? 'Test User';
+        $appointment_at = $input['date']  ?? date('Y-m-d H:i:s');
+        $car_name       = $input['car']   ?? 'Toyota Supra';
+        $notes          = $input['notes'] ?? '';
+    }
+
+    // Secure way: Read from environment variable
+    $apiKey = getenv('BREVO_API_KEY') ?: $_ENV['BREVO_API_KEY'] ?? $_SERVER['BREVO_API_KEY'] ?? null;
+
+    if (!$apiKey) {
+        return $this->api->respond_error("Brevo API key not configured on server", 500);
+    }
+
+    $payload = [
+        "sender" => ["name" => "RideZones", "email" => "johnrheynedamotamares2005@gmail.com"],
+        "to"     => [["email" => $toEmail, "name" => $toName]],
+        "subject" => "Drive Test Booking Confirmed!",
+        "htmlContent" => "
+            <h2>Hi $toName!</h2>
+            <p>Your drive test booking is <strong>confirmed</strong>!</p>
+            <ul>
+                <li>Date & Time: <strong>" . date('F j, Y \a\t g:i A', strtotime($appointment_at)) . "</strong></li>
+                <li>Car: <strong>$car_name</strong></li>
+                <li>Notes: " . ($notes ?: 'None') . "</li>
+            </ul>
+            <br>
+            <p>See you soon!<br><strong>RideZones Team</strong></p>
+        "
+    ];
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, "https://api.brevo.com/v3/smtp/email");
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        "accept: application/json",
+        "api-key: $apiKey",
+        "content-type: application/json"
+    ]);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($httpCode == 201) {
+        return $this->api->respond(['status' => 'success', 'message' => 'Email sent! Check your inbox!']);
+    } else {
+        return $this->api->respond_error("Failed → HTTP $httpCode | $response", 500);
+    }
+}
 }
 
 //=====================================================================================================================================
