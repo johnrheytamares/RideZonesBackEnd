@@ -23,6 +23,14 @@ class GoogleFormController extends Controller {
         $client->setApplicationName("RideZones Dashboard");
         $client->setScopes([Google_Service_Sheets::SPREADSHEETS_READONLY]);
         $path = realpath(__DIR__ . '/../../crack-audio-480009-k7-b5f20f881669.json');
+        if (!$path || !file_exists($path)) {
+            echo json_encode([
+                'success' => false,
+                'error' => 'Service account JSON file not found at ' . (__DIR__ . '/../../crack-audio-480009-k7-b5f20f881669.json')
+            ]);
+            exit;
+        }
+
         $client->setAuthConfig($path);
 
         $service = new Google_Service_Sheets($client);
