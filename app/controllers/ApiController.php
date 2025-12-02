@@ -1220,7 +1220,7 @@ class ApiController extends Controller {
                 INSERT INTO dealers 
                     (name, description, address, phone, email)
                 VALUES 
-                    (?, ?, ?, ?, ?, ?)
+                    (?, ?, ?, ?, ?)
             ", [
                 $input['name'],
                 $input['description'] ?? null,
