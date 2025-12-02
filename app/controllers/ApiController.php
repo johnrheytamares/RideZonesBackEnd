@@ -6,6 +6,7 @@ require_once __DIR__ . '/../../vendor/autoload.php';
 class ApiController extends Controller {
     private $user_id;
 
+
     public function __construct()
     {
         parent::__construct();
@@ -250,6 +251,7 @@ class ApiController extends Controller {
 // CARS MANAGEMENT — Dealer sees & edits only his cars
 // ===================================================================
     public function createCars() {
+        ini_set('post_max_size', '50M');
         $user = $this->getCurrentUser();
         $input = $this->api->body();
 
